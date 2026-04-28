@@ -106,8 +106,16 @@ async def _fetch_drive(src: GoogleDriveSource) -> tuple[str, bytes]:
 
 # ── Response builder ───────────────────────────────────────────────────────────
 
+_PRIORITY_RANK = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+
+
 def _build_agent_response(tasks: list[TaskOut], session_id: str) -> dict:
     jira_tickets = []
+    all_ac: list[str] = []
+    max_priority: Optional[str] = None
+    total_sp = 0
+    teams: set[str] = set()
+
     for t in tasks:
         ac: list[str] = []
         if t.acceptance_criteria:
@@ -115,6 +123,18 @@ def _build_agent_response(tasks: list[TaskOut], session_id: str) -> dict:
                 ac = json.loads(t.acceptance_criteria)
             except Exception:
                 ac = [t.acceptance_criteria]
+        all_ac.extend(ac)
+
+        p = (t.priority or "").lower()
+        if p in _PRIORITY_RANK:
+            if max_priority is None or _PRIORITY_RANK[p] > _PRIORITY_RANK[max_priority]:
+                max_priority = p
+
+        if t.story_points:
+            total_sp += t.story_points
+        if t.user_name:
+            teams.add(t.user_name)
+
         jira_tickets.append({
             "pod_task_id": t.task_id,
             "issue_key": t.jira_id,
@@ -129,6 +149,20 @@ def _build_agent_response(tasks: list[TaskOut], session_id: str) -> dict:
             "sprint_target": t.sprint,
             "parent_epic_key": None,
         })
+
+    key_reqs = [t.task_heading for t in tasks if t.task_heading]
+    task_types = [t.task_type for t in tasks if t.task_type]
+    feature_type = max(set(task_types), key=task_types.count) if task_types else None
+
+    executive_summary: Optional[str] = None
+    if key_reqs:
+        preview = "; ".join(key_reqs[:3])
+        suffix = f" (and {len(key_reqs) - 3} more)" if len(key_reqs) > 3 else ""
+        executive_summary = f"{len(tasks)} task(s) extracted: {preview}{suffix}"
+
+    estimated_effort = f"{total_sp} story points" if total_sp else None
+    assigned_team = ", ".join(sorted(teams)) if teams else None
+
     return {
         "success": True,
         "session_id": session_id,
@@ -138,8 +172,13 @@ def _build_agent_response(tasks: list[TaskOut], session_id: str) -> dict:
             "jira_tickets": jira_tickets,
             "requirements_document": {
                 "project_name": session_id,
-                "key_requirements": [t.task_heading for t in tasks if t.task_heading],
-                "acceptance_criteria": [],
+                "feature_type": feature_type,
+                "executive_summary": executive_summary,
+                "key_requirements": key_reqs,
+                "acceptance_criteria": all_ac,
+                "priority": max_priority,
+                "estimated_effort": estimated_effort,
+                "assigned_team": assigned_team,
                 "stakeholders": [],
                 "tags": [],
                 "decisions_made": [],
