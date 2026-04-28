@@ -82,8 +82,6 @@ services:
       - "6006:6006"
     depends_on:
       - requirements-pod
-      - design-pod
-      - development-pod
     restart: unless-stopped
 
 volumes:
