@@ -1,7 +1,7 @@
 {
   "products": [],
   "pods": {
-    "requirements": "http://35.209.107.68:8001",
+    "requirements": "http://35.209.107.68:6006",
     "design":       "http://35.209.107.68:8082",
     "development":  "http://35.209.107.68:8000"
   },
