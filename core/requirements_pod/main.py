@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.requirements_pod.config import get_settings
-from core.requirements_pod.api.v1 import health, files, tasks
+from core.requirements_pod.api.v1 import health, files, tasks, requirements
 from core.requirements_pod.database.session import engine
 from core.requirements_pod.database.models import Base
 
@@ -114,6 +114,7 @@ async def request_logging_middleware(request: Request, call_next):
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(files.router, prefix="/api/v1")
 app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(requirements.router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

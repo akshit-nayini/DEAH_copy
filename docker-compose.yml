@@ -73,18 +73,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # ── Requirements Backend (Spring Boot) ───────────────────────────────────────
-  backend:
-    build:
-      context: WebApp/backend
-      dockerfile: Dockerfile
-    environment:
-      - REQUIREMENTS_AGENT_URL=http://requirements-pod:8000
-      - CORS_ORIGINS=http://35.209.107.68:6006
-    depends_on:
-      - requirements-pod
-    restart: unless-stopped
-
   # ── Frontend (nginx) ──────────────────────────────────────────────────────────
   frontend:
     build:
@@ -94,7 +82,6 @@ services:
       - "6006:6006"
     depends_on:
       - requirements-pod
-      - backend
     restart: unless-stopped
 
 volumes:
