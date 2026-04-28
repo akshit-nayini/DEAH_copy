@@ -1,0 +1,159 @@
+{
+  "agent": "data_model",
+  "project_name": "Customer360",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-5",
+  "source_tables": [
+    "EMPLOYEES"
+  ],
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "EMPLOYEES"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_employees",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "employee_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique employee identifier sourced from EMPLOYEE_ID primary key; decimal(10,0) cast to INT64"
+        },
+        {
+          "name": "first_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee first name"
+        },
+        {
+          "name": "last_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee last name"
+        },
+        {
+          "name": "email",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee email address"
+        },
+        {
+          "name": "phone_number",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Employee phone number; optional"
+        },
+        {
+          "name": "hire_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Date the employee was hired; used as the DAY-level partition column"
+        },
+        {
+          "name": "job_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Job role code; used as a clustering column"
+        },
+        {
+          "name": "salary",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee base salary with two decimal places of precision"
+        },
+        {
+          "name": "commission_pct",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Commission percentage; nullable for non-commission roles"
+        },
+        {
+          "name": "manager_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referencing FK to employee_id of the reporting manager; nullable for top-level employees"
+        },
+        {
+          "name": "department_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Department identifier; used as a clustering column"
+        },
+        {
+          "name": "status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee status (e.g. ACTIVE, INACTIVE); low-cardinality clustering column"
+        },
+        {
+          "name": "created_date",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Source record creation timestamp"
+        },
+        {
+          "name": "updated_date",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Source record last-updated timestamp; used for incremental change detection"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_employees",
+      "from_column": "manager_id",
+      "to_table": "stg_employees",
+      "to_column": "employee_id",
+      "type": "self-referencing"
+    }
+  ],
+  "partitioning": {
+    "stg_employees": {
+      "type": "DAY",
+      "column": "hire_date",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_employees": [
+      "department_id",
+      "job_id",
+      "status"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_employees",
+      "to_table": "stg_employees",
+      "type": "many-to-one",
+      "notes": "Many employees can report to the same manager; manager_id is a nullable self-reference to employee_id representing the management hierarchy"
+    }
+  ]
+}

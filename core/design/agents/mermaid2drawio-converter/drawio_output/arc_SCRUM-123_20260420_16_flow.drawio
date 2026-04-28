@@ -1,0 +1,101 @@
+<?xml version="1.0" ?>
+<mxfile host="mermaid2drawio" modified="" agent="mermaid2drawio/1.0" version="21.0.0" type="device">
+  <diagram name="arc_SCRUM-123_20260420_16_flow" id="1192cea7b740">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="2a32782bacd8" value="Data Pipeline Architecture" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#E8EAF6;strokeColor=#3949AB;fontSize=16;fontStyle=1;fontColor=#1A237E;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="60" y="10" width="1400" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="8c4e0e71459f" value="⭐ Option 2: Cloud Composer + Cloud Run Jobs (Orchestrated Serverless ETL) — Recommended" style="rounded=1;html=1;fillColor=#F1F8E9;strokeColor=#33691E;fontSize=11;fontColor=#333;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="70" y="60" width="560" height="938" as="geometry"/>
+        </mxCell>
+        <mxCell id="980770ec8521" value="Option 1: Cloud Composer + Apache Beam Dataflow (Enterprise ETL)" style="rounded=1;html=1;fillColor=#EDE7F6;strokeColor=#4527A0;fontSize=11;fontColor=#333;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="210" y="320" width="420" height="678" as="geometry"/>
+        </mxCell>
+        <mxCell id="64eff59addb1" value="Option 3: Cloud Scheduler + Cloud Run Jobs (Serverless Minimal)" style="rounded=1;html=1;fillColor=#F1F8E9;strokeColor=#33691E;fontSize=11;fontColor=#333;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="490" y="60" width="420" height="604" as="geometry"/>
+        </mxCell>
+        <mxCell id="2d2f200875c9" value="📥 Ingestion&lt;br/&gt;Cloud SQL Auth Proxy sidecar + pymysql in Cloud Run Jobs container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="240" y="380" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="a1cd7e2a99e2" value="⚙️ Processing&lt;br/&gt;Cloud Run Jobs (Python 3.11, google-cloud-bigquery SDK, BigQuery Storage Write API)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="240" y="584" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="157f90f90094" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=none;verticalAlign=top;aspect=fixed;imageAspect=0;html=1;fontSize=10;fontStyle=1;fontColor=#333333;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxMiIgZmlsbD0iIzQyODVGNCIvPgogIDxwYXRoIGQ9Ik0zMCAzMGg0MGwtNSA0NUgzNXoiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjkiLz4KICA8cmVjdCB4PSIyOCIgeT0iMjgiIHdpZHRoPSI0NCIgaGVpZ2h0PSI4IiByeD0iMiIgZmlsbD0id2hpdGUiLz4KICA8bGluZSB4MT0iNDAiIHkxPSI0NSIgeDI9IjQwIiB5Mj0iNjUiIHN0cm9rZT0iIzQyODVGNCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGxpbmUgeDE9IjUwIiB5MT0iNDUiIHgyPSI1MCIgeTI9IjY1IiBzdHJva2U9IiM0Mjg1RjQiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSI2MCIgeTE9IjQ1IiB4Mj0iNjAiIHkyPSI2NSIgc3Ryb2tlPSIjNDI4NUY0IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSI1MCIgeT0iNzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM0Mjg1RjQiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiPkdDUzwvdGV4dD4KPC9zdmc+" vertex="1" parent="1">
+          <mxGeometry x="455" y="714" width="70" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="9d0c0665b99e" value="💾 Storage&lt;br/&gt;BigQuery + Google Cloud Storage + Artifact Registry" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="380" y="788" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="3ec58fe0af25" value="📊 Consumption&lt;br/&gt;Consumption" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="380" y="918" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="c60e420ed9b2" value="📅 Orchestration&lt;br/&gt;Cloud Composer 2 (Apache Airflow 2.x)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="240" y="250" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="59221dd6953a" value="📋 Monitoring&lt;br/&gt;Cloud Monitoring + Cloud Logging + Looker Studio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="100" y="120" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="0879ca7f626e" value="🔨 IaC&lt;br/&gt;Terraform (hashicorp/google provider)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="380" y="120" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="7e4978d1b432" value="📥 Ingestion&lt;br/&gt;Cloud SQL Auth Proxy sidecar + pymysql in Cloud Run Jobs container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="660" y="120" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="b59eb0792190" value="⚙️ Processing&lt;br/&gt;Cloud Run Jobs (Python 3.11, google-cloud-bigquery SDK, BigQuery Storage Write API)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="520" y="250" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="e0869fdfe28c" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=none;verticalAlign=top;aspect=fixed;imageAspect=0;html=1;fontSize=10;fontStyle=1;fontColor=#333333;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxMiIgZmlsbD0iIzQyODVGNCIvPgogIDxwYXRoIGQ9Ik0zMCAzMGg0MGwtNSA0NUgzNXoiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjkiLz4KICA8cmVjdCB4PSIyOCIgeT0iMjgiIHdpZHRoPSI0NCIgaGVpZ2h0PSI4IiByeD0iMiIgZmlsbD0id2hpdGUiLz4KICA8bGluZSB4MT0iNDAiIHkxPSI0NSIgeDI9IjQwIiB5Mj0iNjUiIHN0cm9rZT0iIzQyODVGNCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGxpbmUgeDE9IjUwIiB5MT0iNDUiIHgyPSI1MCIgeTI9IjY1IiBzdHJva2U9IiM0Mjg1RjQiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSI2MCIgeTE9IjQ1IiB4Mj0iNjAiIHkyPSI2NSIgc3Ryb2tlPSIjNDI4NUY0IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSI1MCIgeT0iNzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM0Mjg1RjQiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiPkdDUzwvdGV4dD4KPC9zdmc+" vertex="1" parent="1">
+          <mxGeometry x="595" y="380" width="70" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="0c861ea9db5f" value="💾 Storage&lt;br/&gt;BigQuery + Google Cloud Storage" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="520" y="454" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="adcec3a5f789" value="📊 Consumption&lt;br/&gt;Consumption" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FCF5;strokeColor=#33691E;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="520" y="584" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="8a3c741701ab" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="2d2f200875c9" target="a1cd7e2a99e2" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="b47047b20cdb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="a1cd7e2a99e2" target="157f90f90094" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="83c0b6d537fc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="157f90f90094" target="3ec58fe0af25" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="2a3c850de2c4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="c60e420ed9b2" target="2d2f200875c9" value="schedules">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="15c16ab031b2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="c60e420ed9b2" target="a1cd7e2a99e2" value="orchestrates">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="3cc946f327b5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="59221dd6953a" target="a1cd7e2a99e2" value="observes">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ac589744bfd3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="0879ca7f626e" target="c60e420ed9b2" value="provisions">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="f9b7e9b3c7a0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="2d2f200875c9" target="a1cd7e2a99e2" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="b49ffc20060a" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="a1cd7e2a99e2" target="157f90f90094" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="bb64e7c53954" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="157f90f90094" target="3ec58fe0af25" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="74c1e4451933" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="7e4978d1b432" target="b59eb0792190" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3bda5ab6c60" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="b59eb0792190" target="e0869fdfe28c" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="b5fa6c689880" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="e0869fdfe28c" target="adcec3a5f789" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

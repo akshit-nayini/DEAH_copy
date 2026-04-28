@@ -1,0 +1,85 @@
+{
+  "project": "5gcore",
+  "sprint": "",
+  "version": "1.0",
+  "repo": "",
+  "branch": "",
+  "target_branch": "main",
+  "commit_message": "feat: SCRUM-149 \u2014 This pipeline ingests the MySQL source table `agentichub.employees` (host 34.70.",
+  "generated_at": "2026-04-21T17:56:29.339860+00:00",
+  "request_id": "SCRUM-149",
+  "quality_score": 50.0,
+  "approved_for_deploy": true,
+  "files": [
+    {
+      "file_path": "output/SCRUM-149/ddl/ddl_verizon_data_dea_employees.sql",
+      "file_type": "ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "tkt_no": [
+        "SCRUM-149"
+      ],
+      "owner": ""
+    },
+    {
+      "file_path": "output/SCRUM-149/ddl/ddl_verizon_data_dea_employees_staging.sql",
+      "file_type": "ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "tkt_no": [
+        "SCRUM-149"
+      ],
+      "owner": ""
+    },
+    {
+      "file_path": "output/SCRUM-149/ddl/ddl_verizon_data_dea_pipeline_audit_log.sql",
+      "file_type": "ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "tkt_no": [
+        "SCRUM-149"
+      ],
+      "owner": ""
+    },
+    {
+      "file_path": "output/SCRUM-149/sp/sp_mysqltobq_load.sql",
+      "file_type": "sp",
+      "change_type": "created",
+      "columns_affected": [],
+      "tkt_no": [
+        "SCRUM-149"
+      ],
+      "owner": ""
+    },
+    {
+      "file_path": "output/SCRUM-149/sp/sp_log_audit.sql",
+      "file_type": "sp",
+      "change_type": "created",
+      "columns_affected": [],
+      "tkt_no": [
+        "SCRUM-149"
+      ],
+      "owner": ""
+    },
+    {
+      "file_path": "output/SCRUM-149/dag/dag_5gcore_employees_historical_load.py",
+      "file_type": "dag",
+      "change_type": "created",
+      "columns_affected": [],
+      "tkt_no": [
+        "SCRUM-149"
+      ],
+      "owner": ""
+    },
+    {
+      "file_path": "output/SCRUM-149/dag/dag_5gcore_employees_incremental_load.py",
+      "file_type": "dag",
+      "change_type": "created",
+      "columns_affected": [],
+      "tkt_no": [
+        "SCRUM-149"
+      ],
+      "owner": ""
+    }
+  ]
+}

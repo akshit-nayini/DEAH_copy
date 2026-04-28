@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+<mxfile host="mermaid2drawio" modified="" agent="mermaid2drawio/1.0" version="21.0.0" type="device">
+  <diagram name="arc_SCRUM-185_20260427_16_flow_option2" id="0dc9e9ea755d">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="7c0baca5e1c9" value="Data Pipeline Architecture" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#E8EAF6;strokeColor=#3949AB;fontSize=16;fontStyle=1;fontColor=#1A237E;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="60" y="10" width="1400" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="cbfb50cf5e16" value="📥 Ingestion&lt;br/&gt;Google Cloud Dataproc (PySpark 3.4 with MySQL JDBC Connector mysql-connector-java 8.x, ephemeral clusters)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="120" y="100" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="7f67fa778837" value="⚙️ Processing&lt;br/&gt;Apache Spark on Cloud Dataproc (PySpark DataFrames with schema validation and drift detection)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="420" y="100" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="98ec7ac2e5e9" value="💾 Storage&lt;br/&gt;Google BigQuery (verizon_data_dea, date-partitioned) + Google Cloud Storage (Parquet staging)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="720" y="100" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="fda8b946a4b2" value="📊 Consumption&lt;br/&gt;Consumption" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="100" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="d7164d490b05" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="cbfb50cf5e16" target="7f67fa778837" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="3bf5f0511acb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="7f67fa778837" target="98ec7ac2e5e9" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="1a9f7684f954" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="98ec7ac2e5e9" target="fda8b946a4b2" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

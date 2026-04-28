@@ -1,0 +1,369 @@
+{
+  "agent": "data_model",
+  "project_name": "Order Analytics Platform",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-118",
+  "source_tables": [
+    "orders.events",
+    "orders",
+    "order_items"
+  ],
+  "source_connections": [
+    {
+      "db_type": "pubsub",
+      "database": "verizon-data",
+      "instance_connection_name": null,
+      "host": null,
+      "port": null,
+      "username": null,
+      "source_tables": [
+        "orders.events"
+      ]
+    },
+    {
+      "db_type": "postgres",
+      "database": "orders_db",
+      "instance_connection_name": null,
+      "host": "orders-db.corp.com",
+      "port": "5432",
+      "username": "sa",
+      "source_tables": [
+        "orders",
+        "order_items"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_order_events",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "order_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Order identifier from Pub/Sub event payload; FK to stg_orders; cross-path deduplication join key; cluster column"
+        },
+        {
+          "name": "user_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Identifier of the user who placed the order"
+        },
+        {
+          "name": "order_status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Event type: order_placed, order_shipped, order_delivered, order_cancelled; cluster column"
+        },
+        {
+          "name": "total_amount",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Total order value at time of event"
+        },
+        {
+          "name": "currency",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "ISO 4217 currency code"
+        },
+        {
+          "name": "shipping_address",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Shipping destination address; nullable in source"
+        },
+        {
+          "name": "payment_method",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Payment method; nullable in source"
+        },
+        {
+          "name": "order_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Order placement date; DAY partition column"
+        },
+        {
+          "name": "shipped_at",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Ship timestamp; populated for order_shipped events only"
+        },
+        {
+          "name": "delivered_at",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Delivery timestamp; populated for order_delivered events only"
+        },
+        {
+          "name": "cancelled_at",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Cancellation timestamp; populated for order_cancelled events only"
+        },
+        {
+          "name": "created_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Original order creation timestamp from event payload"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Last state-change timestamp; used in batch reconciliation watermark comparison"
+        }
+      ]
+    },
+    {
+      "table_name": "stg_orders",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "order_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique order identifier; NOT NULL and unique per acceptance criteria; MERGE key for batch upsert; cluster column"
+        },
+        {
+          "name": "user_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "User who placed the order; NOT NULL in source"
+        },
+        {
+          "name": "order_status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Current lifecycle status; cluster column for status-filtered queries"
+        },
+        {
+          "name": "total_amount",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Total order value; NOT NULL in source"
+        },
+        {
+          "name": "currency",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "ISO 4217 currency code; NOT NULL in source"
+        },
+        {
+          "name": "shipping_address",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Shipping destination; nullable in source"
+        },
+        {
+          "name": "payment_method",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Payment method; nullable in source"
+        },
+        {
+          "name": "order_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Order placement date; DAY partition column"
+        },
+        {
+          "name": "shipped_at",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Ship timestamp; null until order ships"
+        },
+        {
+          "name": "delivered_at",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Delivery timestamp; null until delivered"
+        },
+        {
+          "name": "cancelled_at",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Cancellation timestamp; null unless cancelled"
+        },
+        {
+          "name": "created_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Source creation timestamp; NOT NULL"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Last update in source; incremental watermark for 02:00 UTC daily batch load"
+        }
+      ]
+    },
+    {
+      "table_name": "stg_order_items",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "item_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique line item identifier; MERGE key for batch upsert deduplication"
+        },
+        {
+          "name": "order_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "FK to stg_orders.order_id; cluster column"
+        },
+        {
+          "name": "product_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Product identifier; cluster column for product analytics"
+        },
+        {
+          "name": "product_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Product name at time of order"
+        },
+        {
+          "name": "quantity",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Units ordered"
+        },
+        {
+          "name": "unit_price",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Per-unit price at time of order"
+        },
+        {
+          "name": "discount_amount",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Line-level discount; null when no discount applied"
+        },
+        {
+          "name": "line_total",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Net line value after discount"
+        },
+        {
+          "name": "created_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Line item creation timestamp; DAY partition column \u2014 surrogate for order_date absent from source"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Last update in source; incremental watermark for 02:00 UTC daily batch load"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_orders",
+      "from_column": "order_id",
+      "to_table": "stg_order_items",
+      "to_column": "order_id",
+      "type": "one-to-many"
+    },
+    {
+      "from_table": "stg_orders",
+      "from_column": "order_id",
+      "to_table": "stg_order_events",
+      "to_column": "order_id",
+      "type": "one-to-many"
+    }
+  ],
+  "partitioning": {
+    "stg_order_events": {
+      "type": "TIME",
+      "column": "order_date",
+      "granularity": "DAY"
+    },
+    "stg_orders": {
+      "type": "TIME",
+      "column": "order_date",
+      "granularity": "DAY"
+    },
+    "stg_order_items": {
+      "type": "TIME",
+      "column": "created_at",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_order_events": [
+      "order_id",
+      "order_status"
+    ],
+    "stg_orders": [
+      "order_id",
+      "order_status"
+    ],
+    "stg_order_items": [
+      "order_id",
+      "product_id"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_orders",
+      "to_table": "stg_order_items",
+      "type": "one-to-many",
+      "notes": "One order contains one or more line items; order_id NOT NULL in both tables; enforced at application level as BigQuery has no declarative FK constraints"
+    },
+    {
+      "from_table": "stg_orders",
+      "to_table": "stg_order_events",
+      "type": "one-to-many",
+      "notes": "One order generates up to four streaming lifecycle events; stg_order_events is append-only with one row per state transition; deduplication on order_id across both Lambda paths"
+    }
+  ]
+}

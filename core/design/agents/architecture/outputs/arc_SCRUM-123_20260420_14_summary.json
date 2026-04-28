@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Cloud Run Jobs (Pragmatic Containerized Batch)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Run Jobs (Python 3.12 + SQLAlchemy 2.x + PyMySQL + Cloud SQL Auth Proxy sidecar)",
+    "processing": "Cloud Run Jobs (Python-based schema validation, type coercion, null checks) + BigQuery SQL MERGE (PK dedup and upsert enforcement)",
+    "storage": "BigQuery Storage Write API COMMITTED stream (target table, date-partitioned by load_date, PK-clustered) + BigQuery audit_log table + BigQuery run_state table + GCS (optional run artifact export)",
+    "orchestration": "Cloud Composer 2 (Apache Airflow \u2014 DAG-based gating: historical validation and sign-off SensorOperator gates incremental activation; BranchOperator handles schema-change halt path; audit log write tasks on success and failure)",
+    "monitoring": "Cloud Monitoring (Cloud Run Job exit code alerting policies, latency metrics) + Cloud Logging (structured JSON logs from Cloud Run container) + Looker Studio (BigQuery-backed stakeholder dashboard on audit_log and run_state)",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Run Job (containerized Python 3.12 service using SQLAlchemy 2.x and PyMySQL) connects to Cloud SQL MySQL via Cloud SQL Auth Proxy sidecar over VPC; on historical load, executes a paginated full SELECT using keyset pagination (ORDER BY pk LIMIT N OFFSET cursor) to bound per-page memory; on incremental runs, executes a watermark-filtered SELECT using the maximum updated_at or PK value recorded in a BigQuery run_state table from the prior successful run, ensuring no gap or overlap across cycles.",
+    "2. Processing: Within the Cloud Run Job, a Python processing layer executes sequentially: (1) pre-load schema compatibility check by comparing MySQL INFORMATION_SCHEMA.COLUMNS definitions against BigQuery table schema via the BigQuery REST API; (2) null constraint validation against defined NOT NULL columns before write; (3) type coercion and mapping to BigQuery-compatible types (e.g., MySQL DATETIME to BQ TIMESTAMP, DECIMAL to NUMERIC); (4) new-column detection with a configurable strategy (halt-and-alert recommended); (5) source row count accumulation; after write, a BigQuery MERGE statement enforces PK uniqueness and upserts records; post-load row count is validated against source count and delta is asserted to zero; null violation counts are logged before marking the run complete.",
+    "3. Storage: Records are written directly to BigQuery via the BigQuery Storage Write API using COMMITTED stream mode for atomic, exactly-once write semantics, eliminating duplicate-write risk on retry; a dedicated BigQuery audit_log table in verizon_data_deah records every run's execution status, source row count, target row count, schema diff result, null violation counts, watermark values, new columns detected, and wall-clock duration; a run_state table persists the last successful watermark per table for incremental continuity.",
+    "4. Consumption: Analytics and reporting teams access BigQuery directly via dataset-level IAM or authorized views; a Looker Studio dashboard connected to the audit_log and run_state BigQuery tables provides Yash and other stakeholders with real-time load health, row count trends, schema change history, and failure events without requiring developer involvement; Cloud Monitoring alert policies notify on-call engineers via PagerDuty or email when Cloud Run Job exit code is non-zero."
+  ],
+  "key_constraints": [
+    "Gate incremental load activation: incremental pipeline must not begin until historical load validation is fully passed and signed off",
+    "Implement a monitoring dashboard or log-based visibility layer enabling stakeholders to independently review load success without developer involvement",
+    "Perform pre-load schema compatibility checks covering data types, null handling, field names, and new column handling strategy before each load execution",
+    "Perform post-load row count validation between MySQL source and BigQuery target for every load cycle",
+    "Enforce primary key uniqueness in BigQuery after every load execution"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Volume Unknown",
+      "mitigation": "Execute a volume profiling query (SELECT COUNT(*) AS row_count, ROUND(SUM(LENGTH(col1) + LENGTH(col2) + ...) / 1073741824, 2) AS size_gb FROM agentichub.employees) before infrastructure provisioning. Gate all sizing decisions \u2014 Cloud Run task memory, keyset page size, Composer parallelism, BigQuery slot reservation \u2014 on confirmed volume data. Design keyset pagination as the default extraction pattern to bound per-page memory consumption independently of total table size."
+    },
+    {
+      "risk": "Incremental Strategy Validity",
+      "mitigation": "Audit the employees table DDL (SHOW CREATE TABLE agentichub.employees) before design finalization. If no watermark column exists, add an updated_at column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP to the MySQL schema, or evaluate Option 3 (Datastream CDC) as the only reliable change-capture mechanism that does not depend on application-managed timestamp columns."
+    },
+    {
+      "risk": "Monitoring SLA Undefined",
+      "mitigation": "Escalate to stakeholders (including Yash) to formally define the maximum acceptable time-to-alert for pipeline failures (e.g., alert within 15 minutes of job failure detection). Until a formal SLA is signed off, configure a conservative default evaluation period of 30 minutes for Cloud Monitoring alerting policies and document this default in the pipeline runbook."
+    }
+  ],
+  "scoring_one_liner": "Scored 7.40/10 \u2014 Cost 8, Scalability 7, Complexity 7, Latency 7, Operability 8. Trade-offs accepted: The primary trade-off accepted is scalability (score 7 vs. 9 for Option 1): Cloud Run Jobs cannot auto-distribute processing across nodes the way Dataflow can, meaning that if the employees table grows to hundreds of millions of rows or dozens of tables are onboarded concurrently, this architecture will require a sharding refactor or migration to Option 1. This is accepted because data volume is currently unknown and unconfirmed to be large, the migration path to Dataflow is well-defined and the audit_log schema is portable, and the cost and complexity savings in the near term outweigh the speculative scaling risk. Cloud Composer's baseline idle cost is additionally accepted as a mandatory infrastructure expense required to fulfill the historical-load gating functional requirement \u2014 it cannot be substituted with Cloud Scheduler without losing the sign-off gate capability.",
+  "open_blockers": [
+    "What is the approximate row count and uncompressed data volume (GB) of the employees table? Required to validate Cloud Run Job memory sizing, confirm whether keyset sharding across parallel tasks is needed, and produce an initial cost estimate.",
+    "Does the employees table contain a reliable updated_at TIMESTAMP column with ON UPDATE CURRENT_TIMESTAMP semantics, or a monotonically increasing auto-increment primary key? If neither exists, the incremental delta strategy must be redesigned before architecture sign-off.",
+    "Is MySQL binary logging currently enabled on the Cloud SQL instance verizon-data:us-central1:mysql-druid-metadatastore with binlog_format=ROW and binlog_row_image=FULL? This is a hard prerequisite only for Option 3 (Datastream) but should be confirmed to fully close that option's feasibility."
+  ],
+  "ticket_id": "SCRUM-123"
+}

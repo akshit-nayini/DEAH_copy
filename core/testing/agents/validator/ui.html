@@ -1,0 +1,752 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Result Validator Agent</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1e293b;}
+.hdr{background:linear-gradient(135deg,#14532d,#166534);color:#fff;padding:20px 28px;}
+.hdr h1{font-size:1.35rem;font-weight:700;}
+.hdr p{font-size:.82rem;opacity:.6;margin-top:4px;}
+.wrap{max-width:1300px;margin:24px auto;padding:0 18px;}
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:22px;margin-bottom:18px;}
+label{font-weight:600;font-size:.88rem;display:block;margin-bottom:6px;}
+.btn{display:inline-block;padding:11px 28px;border:none;border-radius:7px;
+  font-size:.92rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.btn:hover{opacity:.88;}
+.btn-main{background:linear-gradient(135deg,#166534,#15803d);color:#fff;}
+.btn-sm{padding:6px 14px;font-size:.8rem;font-weight:600;border-radius:6px;
+  cursor:pointer;border:1.5px solid #6b7280;background:#fff;}
+.btn-green{border-color:#16a34a;color:#16a34a;}
+.err{background:#fee2e2;color:#b91c1c;border-left:4px solid #b91c1c;
+  padding:10px 14px;border-radius:6px;margin-top:12px;font-size:.87rem;display:none;}
+/* Spinner */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
+  align-items:center;justify-content:center;flex-direction:column;color:#fff;}
+.ov.on{display:flex;}
+.spin{width:46px;height:46px;border:5px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;margin-bottom:14px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+/* Stats */
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+.stat{flex:1;min-width:100px;border-radius:9px;padding:14px 16px;text-align:center;}
+.stat .n{font-size:1.8rem;font-weight:800;line-height:1;}
+.stat .l{font-size:.7rem;font-weight:700;text-transform:uppercase;opacity:.7;margin-top:3px;}
+.s-tot{background:#eff6ff;color:#1d4ed8;}
+.s-ps {background:#dcfce7;color:#15803d;}
+.s-fl {background:#fee2e2;color:#b91c1c;}
+.s-sk {background:#fef9c3;color:#a16207;}
+/* Progress bar */
+.prog-row{display:flex;justify-content:space-between;font-size:.77rem;font-weight:600;margin-bottom:5px;}
+.prog{height:12px;border-radius:7px;background:#e5e7eb;overflow:hidden;display:flex;}
+.p-ps{background:#22c55e;height:100%;transition:width .4s;}
+.p-fl{background:#ef4444;height:100%;transition:width .4s;}
+.p-sk{background:#eab308;height:100%;transition:width .4s;}
+/* Table */
+.toolbar{display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+.filters{display:flex;gap:7px;flex-wrap:wrap;}
+.filt{padding:4px 13px;border-radius:20px;border:1.5px solid #d1d5db;
+  background:#fff;font-size:.78rem;font-weight:600;cursor:pointer;}
+.filt.on{background:#166534;color:#fff;border-color:#166534;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.81rem;}
+thead th{background:#f8fafc;padding:9px 11px;text-align:left;
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:2px solid #e2e8f0;white-space:nowrap;}
+tbody td{padding:9px 11px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
+tbody tr:hover{background:#f8fafc;}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.73rem;font-weight:700;}
+.b-schema{background:#dbeafe;color:#1d4ed8;}
+.b-dq{background:#dcfce7;color:#15803d;}
+.b-part{background:#ffedd5;color:#c2410c;}
+.b-air{background:#ede9fe;color:#6d28d9;}
+.v-pass{background:#dcfce7;color:#15803d;}
+.v-fail{background:#fee2e2;color:#b91c1c;font-weight:800;}
+.v-skip{background:#fef9c3;color:#a16207;}
+.b-hi{background:#fee2e2;color:#b91c1c;}
+.b-md{background:#fef9c3;color:#a16207;}
+.b-lo{background:#f0fdf4;color:#15803d;}
+code{display:block;max-width:200px;max-height:60px;overflow:auto;
+  font-size:.7rem;background:#f1f5f9;padding:3px 6px;border-radius:4px;white-space:pre-wrap;}
+.actual-cell{max-width:180px;word-break:break-word;font-size:.78rem;}
+/* Audit panel */
+.audit-chk{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:700;}
+.aud-sel{background:#dbeafe;color:#1d4ed8;}
+.aud-improved{background:#dcfce7;color:#15803d;}
+.aud-regressed{background:#fee2e2;color:#b91c1c;}
+.aud-new{background:#ede9fe;color:#6d28d9;}
+.aud-unchanged{background:#f3f4f6;color:#6b7280;}
+.trend-bar{flex:1;min-width:18px;background:#22c55e;border-radius:3px 3px 0 0;position:relative;cursor:pointer;}
+.trend-bar.low{background:#ef4444;}
+.trend-bar.mid{background:#eab308;}
+.trend-lbl{flex:1;min-width:18px;font-size:.6rem;color:#9ca3af;text-align:center;overflow:hidden;white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<div class="ov" id="ov">
+  <div class="spin"></div>
+  <div id="ovMsg" style="font-size:1rem;font-weight:600;">Running BQ validation...</div>
+</div>
+
+<div class="hdr">
+  <h1>Result Validator Agent &mdash; Testing POD</h1>
+  <p>Upload the CSV from the Test Case Generator and validate each test case against BigQuery.</p>
+</div>
+
+<div class="wrap">
+
+  <!-- ONE-CLICK VALIDATION CARD (shown when opened from Generator) -->
+  <div class="card" id="autoRunCard" style="display:none;text-align:center;padding:30px 22px;">
+    <div style="font-size:2.2rem;margin-bottom:10px;">&#9654;</div>
+    <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">Ready to Validate</div>
+    <div style="font-size:.85rem;color:#6b7280;margin-bottom:20px;" id="autoRunDetail">
+      Loads the latest test cases from Git, runs BQ validation, and saves results to Git.
+    </div>
+    <button class="btn btn-main" id="autoRunBtn" onclick="autoRunValidation()"
+            style="font-size:1rem;padding:13px 36px;">
+      &#9654; Run Validation &amp; Save to Git
+    </button>
+    <div id="autoRunStatus" style="margin-top:14px;font-size:.84rem;font-weight:600;color:#6b7280;"></div>
+  </div>
+
+  <!-- INPUT CARD -->
+  <div class="card" id="inputCard">
+
+    <!-- Data source banner (populated from localStorage set by Generator UI) -->
+    <div id="dataSourceBanner" style="display:none;margin-bottom:16px;border-radius:9px;padding:14px 18px;">
+      <div style="font-weight:700;font-size:.88rem;margin-bottom:4px;" id="dsBannerTitle"></div>
+      <div style="font-size:.82rem;" id="dsBannerDetail"></div>
+    </div>
+
+    <label>Test Cases CSV</label>
+
+    <!-- Git load -->
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:22px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:2rem;margin-bottom:8px;">&#128194;</div>
+      <p style="font-size:.88rem;color:#374151;margin-bottom:14px;">
+        Pull the latest test cases CSV from <b>DEAH / core/testing/agents/</b>
+      </p>
+      <button class="btn btn-main" onclick="loadFromGit()">&#8595; Load Latest from Git</button>
+      <div id="gitInfo" style="display:none;margin-top:14px;font-size:.83rem;color:#15803d;font-weight:600;">
+        &#10003; Loaded: <span id="gitFile"></span> &mdash; <span id="gitRows"></span> test cases
+      </div>
+    </div>
+
+    <div id="errBox" class="err"></div>
+
+    <div style="margin-top:14px;text-align:right;">
+      <button class="btn btn-main" id="validateBtn" onclick="doValidate()" disabled
+              style="opacity:.45;cursor:not-allowed;">&#10003; Validate against BigQuery</button>
+    </div>
+  </div>
+
+  <!-- PIPELINE COMPARISON CARD (hidden — available via /validate-pipeline API directly) -->
+  <div class="card" id="pipelineCard" style="display:none;visibility:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div>
+        <div style="font-weight:700;font-size:.95rem;">&#128200; Pipeline Output Comparison</div>
+        <div style="font-size:.8rem;color:#6b7280;margin-top:3px;" id="pipelineSubtitle"></div>
+      </div>
+      <button class="btn btn-main" onclick="comparePipeline()" id="compareBtn"
+              style="padding:9px 22px;font-size:.88rem;">&#9654; Compare</button>
+    </div>
+    <div id="pipelineErrBox" class="err"></div>
+    <div id="pipelineResults" style="display:none;">
+      <div id="pipelineOverall" style="margin-bottom:14px;padding:12px 16px;border-radius:8px;font-weight:700;font-size:.9rem;"></div>
+      <div id="pipelineTableResults"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS SECTION -->
+  <div id="resWrap" style="display:none;">
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="stats">
+        <div class="stat s-tot"><div class="n" id="sT">0</div><div class="l">Total</div></div>
+        <div class="stat s-ps" ><div class="n" id="sP">0</div><div class="l">Pass</div></div>
+        <div class="stat s-fl" ><div class="n" id="sF">0</div><div class="l">Fail</div></div>
+        <div class="stat s-sk" ><div class="n" id="sS">0</div><div class="l">Skip</div></div>
+      </div>
+      <div class="prog-row">
+        <span style="color:#22c55e;" id="lPS">Pass 0%</span>
+        <span style="color:#ef4444;" id="lFL">Fail 0%</span>
+        <span style="color:#eab308;" id="lSK">Skip 0%</span>
+      </div>
+      <div class="prog">
+        <div class="p-ps" id="bPS" style="width:0%"></div>
+        <div class="p-fl" id="bFL" style="width:0%"></div>
+        <div class="p-sk" id="bSK" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filt on" data-v="ALL"  onclick="filt(this)">All</button>
+          <button class="filt"    data-v="PASS" onclick="filt(this)">Pass</button>
+          <button class="filt"    data-v="FAIL" onclick="filt(this)">Fail</button>
+          <button class="filt"    data-v="SKIP" onclick="filt(this)">Skip</button>
+        </div>
+        <div style="display:flex;gap:7px;">
+          <a href="/export/csv"   class="btn btn-sm">Download CSV</a>
+          <a href="/export/excel" class="btn btn-sm btn-green">Download Excel</a>
+          <button class="btn btn-sm" id="gitSaveBtn" onclick="saveToGit()"
+                  style="border-color:#4f46e5;color:#4f46e5;">&#8593; Save to Git</button>
+          <button class="btn btn-sm" onclick="doReset()">New</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>TC ID</th><th>Category</th><th>Test Name</th>
+              <th>BQ Query (resolved)</th><th>Expected</th><th>Actual</th>
+              <th>Verdict</th><th>Priority</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- AUDIT HISTORY PANEL ─────────────────────────────────────────────────── -->
+  <div class="card" id="auditPanel" style="margin-top:10px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div style="font-weight:700;font-size:.95rem;">&#128200; Audit History &amp; Traceability</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px;">Pass-rate trend and run-by-run comparison across all validation runs.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="auditScrumFilter" type="text" placeholder="Filter by SCRUM-ID"
+               style="padding:5px 10px;border:1.5px solid #d1d5db;border-radius:6px;font-size:.82rem;width:160px;"/>
+        <button class="btn btn-sm" onclick="loadAuditHistory()" style="border-color:#166534;color:#166534;">&#8635; Refresh</button>
+      </div>
+    </div>
+
+    <!-- Trend sparkline -->
+    <div id="auditTrendWrap" style="display:none;margin-bottom:16px;">
+      <div style="font-size:.78rem;font-weight:600;color:#6b7280;margin-bottom:6px;">Pass Rate Trend</div>
+      <div id="auditTrendBar" style="display:flex;align-items:flex-end;gap:4px;height:54px;"></div>
+      <div id="auditTrendLabels" style="display:flex;gap:4px;margin-top:4px;"></div>
+    </div>
+
+    <!-- Runs table -->
+    <div class="tbl-wrap" id="auditHistoryWrap" style="display:none;">
+      <table id="auditHistoryTable">
+        <thead>
+          <tr>
+            <th>Run ID</th><th>SCRUM</th><th>Mode</th><th>ICD File</th>
+            <th>Started</th><th>Pass Rate</th><th>P/F/S</th><th>Compare</th>
+          </tr>
+        </thead>
+        <tbody id="auditTbody"></tbody>
+      </table>
+    </div>
+
+    <div id="auditEmpty" style="display:none;font-size:.85rem;color:#6b7280;text-align:center;padding:20px 0;">
+      No validation runs recorded yet. Run a validation to start tracking.
+    </div>
+
+    <!-- Comparison result -->
+    <div id="auditCompareWrap" style="display:none;margin-top:18px;border-top:1px solid #e2e8f0;padding-top:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-weight:700;font-size:.9rem;">&#10230; Run Comparison</div>
+        <button class="btn btn-sm" onclick="closeCompare()">&#10005; Close</button>
+      </div>
+      <div id="auditCompareSummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <div class="tbl-wrap">
+        <table id="auditCompareTable">
+          <thead>
+            <tr><th>TC ID</th><th>Category</th><th>Test Name</th><th>Run A</th><th>Run B</th><th>Change</th></tr>
+          </thead>
+          <tbody id="auditCompareTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var all = [];
+var gitCsvPath = null;
+
+// ── Data source banner + pipeline card ───────────────────────────────────────
+var _pipelineMode = '';
+var _pipelineIcdFilename = '';
+var _pipelineMysqlConfig = null;
+
+(function initDataSourceBanner() {
+  try {
+    var p    = new URLSearchParams(window.location.search);
+    var mode = p.get('mode');
+    if (!mode) return;   // opened directly — no banner
+    _pipelineMode        = mode;
+    _pipelineIcdFilename = p.get('icd_filename') || '';
+
+    var banner = document.getElementById('dataSourceBanner');
+    var title  = document.getElementById('dsBannerTitle');
+    var detail = document.getElementById('dsBannerDetail');
+    banner.style.display = 'block';
+
+    var subtitle = document.getElementById('pipelineSubtitle');
+    document.getElementById('pipelineCard').style.display = 'block';
+
+    if (mode === 'source_db') {
+      banner.style.background = '#eff6ff';
+      banner.style.border = '1.5px solid #93c5fd';
+      title.innerHTML = '&#128202; Validation Mode: Source DB';
+      var dtype = (p.get('db_type') || 'mysql').toUpperCase();
+      var host  = p.get('db_host'), port = p.get('db_port') || '3306',
+          user  = p.get('db_user'), db   = p.get('db_name');
+      detail.textContent = (host && db)
+        ? dtype + ' \u2014 ' + user + '@' + host + ':' + port + '/' + db + ' \u2192 BQ target'
+        : 'Source DB \u2192 BQ target table.';
+      subtitle.textContent = 'MySQL source table \u2192 BQ target table';
+      if (host && db) {
+        _pipelineMysqlConfig = { db_type: p.get('db_type') || 'mysql',
+          host: host, port: parseInt(port) || 3306,
+          user: user, database: db };
+      }
+    } else if (mode === 'synthetic') {
+      banner.style.background = '#f0fdfa';
+      banner.style.border = '1.5px solid #6ee7b7';
+      title.innerHTML = '&#9881; Validation Mode: Synthetic Data';
+      detail.textContent = 'Synthetic data used as reference \u2192 validated against BQ target table.';
+      subtitle.textContent = '{table}_synthetic (BQ) \u2192 {table} (BQ pipeline output)';
+    }
+
+    // Show the one-click run button; hide the manual load/validate section
+    document.getElementById('autoRunCard').style.display = 'block';
+    document.getElementById('inputCard').style.display = 'none';
+  } catch(_) {}
+})();
+
+// ── Pipeline Comparison ──────────────────────────────────────────────────────
+async function comparePipeline() {
+  var btn = document.getElementById('compareBtn');
+  btn.disabled = true; btn.textContent = 'Comparing...';
+  document.getElementById('pipelineErrBox').style.display = 'none';
+  document.getElementById('pipelineResults').style.display = 'none';
+  spin(true, 'Comparing pipeline output...');
+  try {
+    var payload = { mode: _pipelineMode, icd_filename: _pipelineIcdFilename };
+    if (_pipelineMysqlConfig) payload.mysql_config = _pipelineMysqlConfig;
+    var r = await fetch('/validate-pipeline', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var d = await r.json();
+    renderPipelineResults(d);
+    document.getElementById('pipelineResults').style.display = 'block';
+  } catch(e) {
+    var eb = document.getElementById('pipelineErrBox');
+    eb.textContent = 'Error: ' + e.message;
+    eb.style.display = 'block';
+  } finally {
+    spin(false);
+    btn.disabled = false; btn.textContent = '\u25B6 Compare';
+  }
+}
+
+function renderPipelineResults(d) {
+  var overall = document.getElementById('pipelineOverall');
+  if (d.ok) {
+    overall.style.background = '#dcfce7'; overall.style.color = '#15803d';
+    overall.textContent = '\u2713 ' + (d.message || 'All checks passed');
+  } else {
+    overall.style.background = '#fee2e2'; overall.style.color = '#b91c1c';
+    overall.textContent = '\u2717 ' + (d.message || 'Some checks failed');
+  }
+
+  var tables = d.table_results || [];
+  var html = tables.map(function(t) {
+    var rowColor = t.ok ? '#dcfce7' : '#fee2e2';
+    var textColor = t.ok ? '#15803d' : '#b91c1c';
+    var icon = t.ok ? '\u2713' : '\u2717';
+    var checks = (t.checks || []).map(function(c) {
+      var bg = c.passed ? '#f0fdf4' : '#fef2f2';
+      return '<tr style="background:'+bg+';">'+
+        '<td style="padding:6px 10px;font-size:.79rem;">'+esc(c.name)+'</td>'+
+        '<td style="padding:6px 10px;font-size:.79rem;font-family:monospace;">'+esc(String(c.source_val))+'</td>'+
+        '<td style="padding:6px 10px;font-size:.79rem;font-family:monospace;">'+esc(String(c.target_val))+'</td>'+
+        '<td style="padding:6px 10px;"><span class="badge '+(c.passed?'v-pass':'v-fail')+'">'+(c.passed?'PASS':'FAIL')+'</span></td>'+
+        '</tr>';
+    }).join('');
+    var checksTable = checks ? (
+      '<table style="width:100%;border-collapse:collapse;margin-top:10px;">'+
+      '<thead><tr style="background:#f8fafc;">'+
+      '<th style="padding:5px 10px;font-size:.7rem;text-align:left;border-bottom:1px solid #e2e8f0;">Check</th>'+
+      '<th style="padding:5px 10px;font-size:.7rem;text-align:left;border-bottom:1px solid #e2e8f0;">Source</th>'+
+      '<th style="padding:5px 10px;font-size:.7rem;text-align:left;border-bottom:1px solid #e2e8f0;">Target</th>'+
+      '<th style="padding:5px 10px;font-size:.7rem;border-bottom:1px solid #e2e8f0;">Result</th>'+
+      '</tr></thead><tbody>'+checks+'</tbody></table>'
+    ) : '<p style="font-size:.8rem;color:#9ca3af;margin-top:8px;">'+esc(t.summary||'No checks')+'</p>';
+
+    return '<div style="border:1.5px solid #e2e8f0;border-radius:9px;margin-bottom:12px;overflow:hidden;">'+
+      '<div style="padding:12px 16px;background:'+rowColor+';display:flex;justify-content:space-between;align-items:center;">'+
+      '<div><span style="font-weight:700;font-size:.88rem;color:'+textColor+';">'+icon+' '+esc(t.table)+'</span>'+
+      '&nbsp;<span style="font-size:.78rem;color:#6b7280;">'+esc(t.summary||'')+'</span></div>'+
+      '<div style="font-size:.75rem;color:#6b7280;">'+esc(t.source||'')+' &rarr; '+esc(t.target||'')+'</div>'+
+      '</div>'+checksTable+'</div>';
+  }).join('');
+
+  document.getElementById('pipelineTableResults').innerHTML = html || '<p style="color:#9ca3af;">No table results.</p>';
+}
+
+// ── Auto-run (triggered by button when opened from Generator) ────────────────
+async function autoRunValidation() {
+  var btn    = document.getElementById('autoRunBtn');
+  var status = document.getElementById('autoRunStatus');
+  btn.disabled = true;
+
+  function setStatus(msg, color) {
+    status.textContent = msg;
+    status.style.color = color || '#6b7280';
+  }
+
+  try {
+    // Step 1: Load test cases from Git
+    setStatus('Step 1/3 \u2014 Loading test cases from Git...', '#6b7280');
+    spin(true, 'Step 1/3 \u2014 Loading test cases from Git...');
+    await loadFromGit();
+    if (!gitCsvPath) { btn.disabled = false; return; }
+    var loadedFile = document.getElementById('gitFile').textContent || gitCsvPath;
+    var loadedRows = document.getElementById('gitRows').textContent || '?';
+    setStatus('\u2713 Loaded: ' + loadedFile + ' (' + loadedRows + ' test cases)', '#15803d');
+
+    // Step 2: Run BQ validation
+    setStatus('\u2713 File: ' + loadedFile + ' | Step 2/3 \u2014 Running BQ validation...', '#6b7280');
+    spin(true, 'Step 2/3 \u2014 Running BQ validation on ' + loadedFile + '...');
+    await doValidate();
+    if (!all.length) { btn.disabled = false; return; }
+    setStatus('\u2713 File: ' + loadedFile + ' | Step 3/3 \u2014 Saving results to Git...', '#6b7280');
+
+    // Step 3: Save results to Git
+    spin(true, 'Step 3/3 \u2014 Saving results to Git...');
+    var r = await fetch('/save-to-git', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({})
+    });
+    var d = await r.json();
+    if (d.ok) {
+      setStatus('\u2713 Done \u2014 ' + loadedFile + ' validated and results saved to Git.', '#15803d');
+      var saveBtn = document.getElementById('gitSaveBtn');
+      saveBtn.textContent = '\u2713 Saved';
+      saveBtn.style.color = '#16a34a';
+      saveBtn.style.borderColor = '#16a34a';
+    } else {
+      setStatus('Validation done but Git save failed: ' + (d.message || ''), '#b91c1c');
+    }
+  } catch(e) {
+    setStatus('Error: ' + e.message, '#b91c1c');
+    btn.disabled = false;
+  } finally {
+    spin(false);
+  }
+}
+
+// ── Load from Git ────────────────────────────────────────────────────────────
+async function loadFromGit() {
+  hideErr();
+  spin(true, 'Pulling latest CSV from Git...');
+  try {
+    var r = await fetch('/load-from-git');
+    var d = await r.json();
+    if (!r.ok) { showErr(d.error || 'Failed to load from Git.'); return; }
+    gitCsvPath = d.file_path;
+    document.getElementById('gitFile').textContent = d.filename;
+    document.getElementById('gitRows').textContent = d.row_count;
+    document.getElementById('gitInfo').style.display = 'block';
+    var btn = document.getElementById('validateBtn');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+  } catch(e) { showErr('Git error: '+e.message); }
+  finally { spin(false); }
+}
+
+// ── Validate ────────────────────────────────────────────────────────────────
+async function doValidate() {
+  if (!gitCsvPath) { showErr('Load the CSV from Git first.'); return; }
+  hideErr();
+  spin(true, 'Running BigQuery validation...');
+  try {
+    var payload = {csv_path: gitCsvPath, mode: _pipelineMode || 'synthetic',
+                   icd_filename: _pipelineIcdFilename || ''};
+    if (_pipelineMysqlConfig) payload.mysql_config = _pipelineMysqlConfig;
+    var r = await fetch('/validate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    var text = await r.text();
+    var d;
+    try { d = JSON.parse(text); } catch(e) { showErr('Bad response: '+text.substring(0,200)); return; }
+    if (!r.ok) { showErr(d.error || 'Validation failed.'); return; }
+    all = d.results || [];
+    renderStats(all);
+    renderTable(all);
+    document.getElementById('inputCard').style.display = 'none';
+    document.getElementById('resWrap').style.display   = 'block';
+  } catch(e) { showErr('Error: '+e.message); }
+  finally { spin(false); }
+}
+
+// ── Stats ───────────────────────────────────────────────────────────────────
+function renderStats(cases) {
+  var t  = cases.length;
+  var ps = cases.filter(function(c){return c.verdict==='PASS';}).length;
+  var fl = cases.filter(function(c){return c.verdict==='FAIL';}).length;
+  var sk = cases.filter(function(c){return c.verdict==='SKIP';}).length;
+  document.getElementById('sT').textContent = t;
+  document.getElementById('sP').textContent = ps;
+  document.getElementById('sF').textContent = fl;
+  document.getElementById('sS').textContent = sk;
+  var pct = function(n){ return t ? Math.round(n/t*100) : 0; };
+  document.getElementById('bPS').style.width = pct(ps)+'%';
+  document.getElementById('bFL').style.width = pct(fl)+'%';
+  document.getElementById('bSK').style.width = pct(sk)+'%';
+  document.getElementById('lPS').textContent = 'Pass '+pct(ps)+'%';
+  document.getElementById('lFL').textContent = 'Fail '+pct(fl)+'%';
+  document.getElementById('lSK').textContent = 'Skip '+pct(sk)+'%';
+}
+
+// ── Table ───────────────────────────────────────────────────────────────────
+function renderTable(cases) {
+  document.getElementById('tbody').innerHTML = cases.map(function(tc) {
+    var q  = (tc.resolved_query || tc.query || '').trim();
+    var qc = q ? '<code>'+esc(q)+'</code>' : '<span style="color:#9ca3af;font-size:.78rem;">N/A</span>';
+    return '<tr data-v="'+(tc.verdict||'')+'">'+
+      '<td><b>'+esc(tc.tc_id)+'</b></td>'+
+      '<td>'+catB(tc.category)+'</td>'+
+      '<td><b>'+esc(tc.test_name)+'</b></td>'+
+      '<td>'+qc+'</td>'+
+      '<td>'+esc(tc.expected_result)+'</td>'+
+      '<td class="actual-cell">'+esc(tc.actual_result)+'</td>'+
+      '<td>'+vB(tc.verdict)+'</td>'+
+      '<td>'+pB(tc.priority)+'</td>'+
+      '</tr>';
+  }).join('');
+}
+
+function catB(c){
+  var m={'SCHEMA':'b-schema','DATA QUALITY':'b-dq','PARTITION':'b-part','AIRFLOW JOB':'b-air'};
+  var l={'SCHEMA':'Schema','DATA QUALITY':'Data Quality','PARTITION':'Partition','AIRFLOW JOB':'Airflow Job'};
+  var u=(c||'').toUpperCase();
+  return '<span class="badge '+(m[u]||'b-schema')+'">'+(l[u]||c)+'</span>';
+}
+function vB(v){
+  var m={'PASS':'v-pass','FAIL':'v-fail','SKIP':'v-skip'};
+  return '<span class="badge '+(m[v]||'')+'">'+esc(v)+'</span>';
+}
+function pB(p){
+  var v=(p||'').toLowerCase();
+  if(v==='high')   return '<span class="badge b-hi">High</span>';
+  if(v==='medium') return '<span class="badge b-md">Medium</span>';
+  return '<span class="badge b-lo">Low</span>';
+}
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function filt(btn) {
+  document.querySelectorAll('.filt').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  var v = btn.getAttribute('data-v');
+  renderTable(v==='ALL' ? all : all.filter(function(t){return t.verdict===v;}));
+}
+
+// ── Save to Git ──────────────────────────────────────────────────────────────
+async function saveToGit() {
+  var btn = document.getElementById('gitSaveBtn');
+  var orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    var r = await fetch('/save-to-git', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({})
+    });
+    var text = await r.text();
+    var d;
+    try { d = JSON.parse(text); } catch(e) { alert('Unexpected response: ' + text.substring(0,200)); return; }
+    if (d.ok) {
+      btn.textContent = '\u2713 Saved';
+      btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a';
+      setTimeout(function(){ btn.textContent = orig; btn.style.color='#4f46e5'; btn.style.borderColor='#4f46e5'; btn.disabled=false; }, 3000);
+    } else {
+      alert('Git save failed: ' + (d.message || 'Unknown error'));
+      btn.textContent = orig; btn.disabled = false;
+    }
+  } catch(e) {
+    alert('Network error: ' + e.message);
+    btn.textContent = orig; btn.disabled = false;
+  }
+}
+
+function doReset() {
+  all = []; gitCsvPath = null;
+  document.getElementById('resWrap').style.display   = 'none';
+  document.getElementById('inputCard').style.display = '';
+  document.getElementById('gitInfo').style.display   = 'none';
+  var btn = document.getElementById('validateBtn');
+  btn.disabled = true; btn.style.opacity = '.45'; btn.style.cursor = 'not-allowed';
+}
+
+function spin(on, msg) {
+  document.getElementById('ov').classList.toggle('on', on);
+  if (msg) document.getElementById('ovMsg').textContent = msg;
+}
+function showErr(m){ var e=document.getElementById('errBox'); e.textContent=m; e.style.display='block'; }
+function hideErr(){ document.getElementById('errBox').style.display='none'; }
+
+// ── Audit History ─────────────────────────────────────────────────────────────
+var _auditRuns = [];
+var _auditCompareA = null;
+
+async function loadAuditHistory() {
+  var scrum = document.getElementById('auditScrumFilter').value.trim();
+  var url   = '/audit/history?limit=30' + (scrum ? '&scrum_id=' + encodeURIComponent(scrum) : '');
+  try {
+    var r = await fetch(url);
+    var d = await r.json();
+    if (d.error) { console.warn('Audit fetch error:', d.error); return; }
+    _auditRuns = d.history || [];
+    renderAuditTrend(d.trend || []);
+    renderAuditTable(_auditRuns);
+  } catch(e) { console.warn('Audit history fetch failed:', e); }
+}
+
+function renderAuditTrend(trend) {
+  var wrap = document.getElementById('auditTrendWrap');
+  var bar  = document.getElementById('auditTrendBar');
+  var lbls = document.getElementById('auditTrendLabels');
+  if (!trend.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  bar.innerHTML = trend.map(function(t) {
+    var pct = Math.round(t.pass_rate);
+    var cls = pct >= 80 ? '' : pct >= 50 ? 'mid' : 'low';
+    var h   = Math.max(4, Math.round(pct / 100 * 50));
+    return '<div class="trend-bar ' + cls + '" style="height:' + h + 'px;" title="' +
+           t.scrum_id + ' | ' + t.started_at.substring(0,10) + ' | ' + pct + '% pass"></div>';
+  }).join('');
+  lbls.innerHTML = trend.map(function(t) {
+    return '<div class="trend-lbl">' + Math.round(t.pass_rate) + '%</div>';
+  }).join('');
+}
+
+function renderAuditTable(runs) {
+  var wrap  = document.getElementById('auditHistoryWrap');
+  var empty = document.getElementById('auditEmpty');
+  var tbody = document.getElementById('auditTbody');
+  if (!runs.length) { wrap.style.display='none'; empty.style.display='block'; return; }
+  wrap.style.display  = 'block';
+  empty.style.display = 'none';
+  tbody.innerHTML = runs.map(function(r) {
+    var rate      = r.pass_rate.toFixed(1);
+    var rateColor = r.pass_rate >= 80 ? '#15803d' : r.pass_rate >= 50 ? '#a16207' : '#b91c1c';
+    var dt        = (r.started_at || '').replace('T',' ').substring(0,16);
+    var shortId   = r.run_id.substring(0,8) + '…';
+    var icdShort  = (r.icd_filename||'—').replace(/^model_/,'').substring(0,28);
+    return '<tr>' +
+      '<td><span style="font-family:monospace;font-size:.75rem;" title="' + esc(r.run_id) + '">' + esc(shortId) + '</span></td>' +
+      '<td><b>' + esc(r.scrum_id) + '</b></td>' +
+      '<td>' + esc(r.mode) + '</td>' +
+      '<td style="font-size:.75rem;max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;" title="' + esc(r.icd_filename) + '">' + esc(icdShort) + '</td>' +
+      '<td style="white-space:nowrap;">' + esc(dt) + '</td>' +
+      '<td><b style="color:' + rateColor + ';">' + rate + '%</b></td>' +
+      '<td style="white-space:nowrap;">' +
+        '<span class="badge v-pass">' + r.passed + 'P</span> ' +
+        '<span class="badge v-fail">' + r.failed + 'F</span> ' +
+        '<span class="badge v-skip">' + r.skipped + 'S</span>' +
+      '</td>' +
+      '<td><button class="btn btn-sm audit-chk aud-sel" ' +
+        'onclick="selectForCompare(\'' + r.run_id + '\')" style="font-size:.72rem;padding:3px 9px;">Select A</button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function selectForCompare(runId) {
+  if (!_auditCompareA) {
+    _auditCompareA = runId;
+    document.querySelectorAll('.audit-chk').forEach(function(b){
+      var m = b.getAttribute('onclick').match(/'([^']+)'/);
+      if (m && m[1] === runId) { b.textContent = 'Run A \u2713'; b.style.background='#166534'; b.style.color='#fff'; }
+      else { b.textContent = 'Select B'; }
+    });
+  } else if (_auditCompareA === runId) {
+    _auditCompareA = null;
+    document.querySelectorAll('.audit-chk').forEach(function(b){ b.textContent='Select A'; b.style.background=''; b.style.color=''; });
+  } else {
+    runCompare(_auditCompareA, runId);
+    _auditCompareA = null;
+    document.querySelectorAll('.audit-chk').forEach(function(b){ b.textContent='Select A'; b.style.background=''; b.style.color=''; });
+  }
+}
+
+async function runCompare(aId, bId) {
+  var url = '/audit/compare?run_a=' + encodeURIComponent(aId) + '&run_b=' + encodeURIComponent(bId);
+  try {
+    var r = await fetch(url);
+    var d = await r.json();
+    if (d.error) { alert('Compare failed: ' + d.error); return; }
+    renderCompare(d);
+  } catch(e) { alert('Compare network error: ' + e.message); }
+}
+
+function renderCompare(d) {
+  var wrap    = document.getElementById('auditCompareWrap');
+  var summary = document.getElementById('auditCompareSummary');
+  var tbody   = document.getElementById('auditCompareTbody');
+  wrap.style.display = 'block';
+  var s = d.summary || {};
+  summary.innerHTML =
+    '<span class="badge aud-improved">\u2b06 Improved: ' + (s.improved||0) + '</span> ' +
+    '<span class="badge aud-regressed">\u2b07 Regressed: ' + (s.regressed||0) + '</span> ' +
+    '<span class="badge aud-new">+ New: ' + (s.new||0) + '</span> ' +
+    '<span style="font-size:.8rem;color:#6b7280;margin-left:6px;">Unchanged: ' + (s.unchanged||0) + '</span>';
+  var ra = d.run_a || {}; var rb = d.run_b || {};
+  var headerA = (ra.scrum_id||'Run A') + ' ' + (ra.started_at||'').substring(0,10) + ' (' + (ra.pass_rate||0).toFixed(1) + '%)';
+  var headerB = (rb.scrum_id||'Run B') + ' ' + (rb.started_at||'').substring(0,10) + ' (' + (rb.pass_rate||0).toFixed(1) + '%)';
+  document.querySelector('#auditCompareTable thead tr').innerHTML =
+    '<th>TC ID</th><th>Category</th><th>Test Name</th>' +
+    '<th>' + esc(headerA) + '</th><th>' + esc(headerB) + '</th><th>Change</th>';
+  var changes = d.changes || [];
+  if (!changes.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6b7280;padding:14px;">No differences found.</td></tr>';
+  } else {
+    tbody.innerHTML = changes.map(function(c) {
+      var dirCls = 'aud-' + c.direction;
+      var dirIcon = {improved:'\u2b06', regressed:'\u2b07', new:'+', unchanged:''}[c.direction] || '';
+      var vaSpan = c.verdict_a ? '<span class="badge v-' + c.verdict_a.toLowerCase() + '">' + esc(c.verdict_a) + '</span>' : '<span style="color:#9ca3af;">\u2014</span>';
+      var vbSpan = c.verdict_b ? '<span class="badge v-' + c.verdict_b.toLowerCase() + '">' + esc(c.verdict_b) + '</span>' : '<span style="color:#9ca3af;">\u2014</span>';
+      return '<tr>' +
+        '<td style="font-family:monospace;font-size:.78rem;">' + esc(c.tc_id) + '</td>' +
+        '<td>' + esc(c.category) + '</td>' +
+        '<td>' + esc(c.test_name) + '</td>' +
+        '<td>' + vaSpan + '</td>' +
+        '<td>' + vbSpan + '</td>' +
+        '<td><span class="badge audit-chk ' + dirCls + '">' + dirIcon + ' ' + esc(c.direction) + '</span></td>' +
+        '</tr>';
+    }).join('');
+  }
+  wrap.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function closeCompare() {
+  document.getElementById('auditCompareWrap').style.display = 'none';
+  _auditCompareA = null;
+  document.querySelectorAll('.audit-chk').forEach(function(b){ b.textContent='Select A'; b.style.background=''; b.style.color=''; });
+}
+
+window.addEventListener('load', function(){ loadAuditHistory(); });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+tc_id,category,test_name,description,query,expected_result,priority,linked_ac
+TC-001,SCHEMA,Verify id column type is INT64,Check id column data type matches ICD specification,"SELECT column_name, data_type FROM `region-us`.INFORMATION_SCHEMA.COLUMNS WHERE table_name = 'orders' AND column_name = 'id'",data_type = 'INT64',High,N/A
+TC-002,SCHEMA,Verify orders table exists,Check orders table is present in the dataset,SELECT table_name FROM `region-us`.INFORMATION_SCHEMA.TABLES WHERE table_name = 'orders',table_name = 'orders' returned in result,High,N/A
+TC-003,SCHEMA,Verify id column exists in orders,Check id column is present in orders table,SELECT column_name FROM `region-us`.INFORMATION_SCHEMA.COLUMNS WHERE table_name = 'orders' AND column_name = 'id',column_name = 'id' returned in result,High,N/A
+TC-004,DATA QUALITY,Verify id column has no nulls,Check id column contains zero null values,SELECT COUNT(*) AS null_count FROM `orders` WHERE id IS NULL,null_count = 0,High,AC-01
+TC-005,DATA QUALITY,Verify id column uniqueness,Check id column contains no duplicate values,SELECT COUNT(id) - COUNT(DISTINCT id) AS duplicate_count FROM `orders`,duplicate_count = 0,Medium,N/A
+TC-006,DATA QUALITY,Verify orders table has rows,Check orders table is not empty after load,SELECT COUNT(*) AS row_count FROM `orders`,row_count > 0,High,N/A
+TC-007,PARTITION,Verify partition metadata exists,Check orders table partition information is available,"SELECT partition_id, total_rows FROM `orders` TABLESAMPLE SYSTEM (1 PERCENT) LIMIT 1",Query executes without error; partition metadata accessible,Low,N/A
+TC-008,PARTITION,Verify no nulls in partition column,Check partition column contains no null values,SELECT COUNT(*) AS null_partition_count FROM `orders` WHERE _PARTITIONTIME IS NULL,null_partition_count = 0,Medium,N/A
+TC-009,AIRFLOW JOB,Verify DAG completes successfully,Check Airflow DAG run status is success,,DAG run state = 'success' with no failed tasks,High,N/A
+TC-010,AIRFLOW JOB,Verify DAG schedule interval correct,Check DAG runs on expected schedule interval,,DAG schedule_interval matches defined ICD pipeline schedule,Medium,N/A
+TC-011,AIRFLOW JOB,Verify orders load task executed,Check orders table load task ran without errors,,Task state = 'success' for orders load task,High,AC-01

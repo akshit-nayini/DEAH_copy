@@ -1,0 +1,54 @@
+erDiagram
+    stg_sessions {
+        STRING session_id PK
+        STRING user_id
+        STRING anonymous_id
+        TIMESTAMP session_start
+        TIMESTAMP session_end
+        INT64 duration_seconds
+        INT64 page_view_count
+        INT64 event_count
+        STRING landing_page
+        STRING exit_page
+        STRING channel
+        STRING country_code
+        STRING device_type
+        BOOL is_bounce
+        TIMESTAMP ingested_at
+    }
+    stg_page_views {
+        STRING event_id PK
+        STRING session_id FK
+        STRING user_id
+        STRING anonymous_id
+        STRING page_url
+        STRING page_title
+        STRING referrer_url
+        STRING utm_source
+        STRING utm_medium
+        STRING utm_campaign
+        STRING device_type
+        STRING browser
+        STRING os
+        STRING country_code
+        TIMESTAMP event_timestamp
+        TIMESTAMP ingested_at
+    }
+    stg_user_events {
+        STRING event_id PK
+        STRING session_id FK
+        STRING user_id
+        STRING anonymous_id
+        STRING event_type
+        STRING event_category
+        STRING event_label
+        STRING page_url
+        STRING element_id
+        FLOAT64 event_value
+        STRING properties
+        STRING device_type
+        TIMESTAMP event_timestamp
+        TIMESTAMP ingested_at
+    }
+    stg_sessions ||--o{ stg_page_views : "session_id"
+    stg_sessions ||--o{ stg_user_events : "session_id"

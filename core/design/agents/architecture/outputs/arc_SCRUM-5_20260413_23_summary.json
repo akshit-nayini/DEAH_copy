@@ -1,0 +1,48 @@
+{
+  "agent": "architecture",
+  "project_name": "Customer 360",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Dataflow Batch Pipeline",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Dataflow",
+    "processing": "Dataflow",
+    "storage": "BigQuery + GCS",
+    "orchestration": "Cloud Composer",
+    "monitoring": "Cloud Monitoring + Logging",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer orchestrates Dataflow job to extract from MySQL via Cloud SQL Proxy",
+    "2. Processing: Dataflow processes and transforms data with auto-scaling",
+    "3. Storage: Land raw data in GCS, store processed data in BigQuery",
+    "4. Consumption: BigQuery tables available for analytics and reporting"
+  ],
+  "key_constraints": [
+    "preferred_tools",
+    "functional_requirements",
+    "business_context"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Network Connectivity",
+      "mitigation": "Verify network connectivity and implement Cloud SQL Proxy or VPN if needed"
+    },
+    {
+      "risk": "Data Schema Evolution",
+      "mitigation": "Implement schema monitoring and flexible schema handling in pipelines"
+    },
+    {
+      "risk": "Resource Sizing",
+      "mitigation": "Start with auto-scaling solutions and monitor performance metrics to optimize"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.35/10 \u2014 Cost 6, Scalability 9, Complexity 7, Latency 7, Operability 9. Trade-offs accepted: Higher baseline cost for Cloud Composer in exchange for preferred orchestration tool and reduced operational overhead.",
+  "open_blockers": [
+    "What are the specific scalability requirements beyond the current 10GB volume?",
+    "Are there data governance or security requirements for the production environment?",
+    "What is the expected growth rate of data volume over time?"
+  ],
+  "ticket_id": "SCRUM-5"
+}

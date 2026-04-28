@@ -1,0 +1,105 @@
+[
+  {
+    "path": "ddl/dim_customer.sql",
+    "purpose": "DDL for ${DATASET}.dim_customer",
+    "sha256": "294b71d5dd521eef765de17015532d7cdf5b62c4021e5f54c66b3fe50ff07041",
+    "dependencies": [],
+    "generated_at": "2026-04-03T20:14:31.444808"
+  },
+  {
+    "path": "ddl/dim_product.sql",
+    "purpose": "DDL for ${DATASET}.dim_product",
+    "sha256": "99a405d07fb67271681892689b49d6b26d1443696ff613bf824051d85ee6b784",
+    "dependencies": [],
+    "generated_at": "2026-04-03T20:14:31.444843"
+  },
+  {
+    "path": "ddl/fct_orders.sql",
+    "purpose": "DDL for ${DATASET}.fct_orders",
+    "sha256": "b10c480402fa4067180dc2ec5b5f2760b9609931fa50dceadfa8dd7c7e5caf2b",
+    "dependencies": [],
+    "generated_at": "2026-04-03T20:14:31.444868"
+  },
+  {
+    "path": "ddl/fct_daily_sales_summary.sql",
+    "purpose": "DDL for ${DATASET}.fct_daily_sales_summary",
+    "sha256": "26ef3b045cd7af350740f4dd8fe19e8057653bf5b390b4b7dd5d4a1f0324d630",
+    "dependencies": [],
+    "generated_at": "2026-04-03T20:14:31.444888"
+  },
+  {
+    "path": "ddl/stg_order_events.sql",
+    "purpose": "DDL for ${DATASET}.stg_order_events",
+    "sha256": "1c8bc1b8d572f51e85f4944b6455e4cef8b4635687e38a744c410e1642257a4b",
+    "dependencies": [],
+    "generated_at": "2026-04-03T20:14:31.444907"
+  },
+  {
+    "path": "ddl/dim_shipping_region.sql",
+    "purpose": "DDL for ${DATASET}.dim_shipping_region",
+    "sha256": "d2ab5325c16b013e37ff5e14cd43e7dac84452ef886fef4f95f925ec060fc07e",
+    "dependencies": [],
+    "generated_at": "2026-04-03T20:14:31.444928"
+  },
+  {
+    "path": "dml/merge_dim_customer.sql",
+    "purpose": "DML (scd_type_2) for dim_customer",
+    "sha256": "97ce0c1f0e07831730d52af8b7a082bbd812153aad27894c7d3ea52648928dc0",
+    "dependencies": [
+      "ddl/dim_customer.sql"
+    ],
+    "generated_at": "2026-04-03T20:14:31.444958"
+  },
+  {
+    "path": "dml/merge_dim_product.sql",
+    "purpose": "DML (scd_type_1) for dim_product",
+    "sha256": "24ee2a75c1f61543be32bd5019deb21027dabf5967a87b585e5fc6b3567e83de",
+    "dependencies": [
+      "ddl/dim_product.sql"
+    ],
+    "generated_at": "2026-04-03T20:14:31.444981"
+  },
+  {
+    "path": "dml/append_fct_orders.sql",
+    "purpose": "DML (incremental_append) for fct_orders",
+    "sha256": "39ebbbc1f1ed62dad108da2c792489ccfb2e1ab7d22fca45a1c16d48d618c8b2",
+    "dependencies": [
+      "ddl/fct_orders.sql"
+    ],
+    "generated_at": "2026-04-03T20:14:31.445000"
+  },
+  {
+    "path": "dml/refresh_fct_daily_sales_summary.sql",
+    "purpose": "DML (full_refresh) for fct_daily_sales_summary",
+    "sha256": "f6eb8089075633b79d03771b020aca72cd0c8486c7501c450f5facb4bf16c212",
+    "dependencies": [
+      "ddl/fct_daily_sales_summary.sql"
+    ],
+    "generated_at": "2026-04-03T20:14:31.445020"
+  },
+  {
+    "path": "dml/append_stg_order_events.sql",
+    "purpose": "DML (incremental_append) for stg_order_events",
+    "sha256": "9a597aea9b5d2a0583234742dde613adaf1a09fbca71603ba10b181ae903457d",
+    "dependencies": [
+      "ddl/stg_order_events.sql"
+    ],
+    "generated_at": "2026-04-03T20:14:31.445040"
+  },
+  {
+    "path": "dml/refresh_dim_shipping_region.sql",
+    "purpose": "DML (full_refresh) for dim_shipping_region",
+    "sha256": "9a924563691cc686551c01c3177662d82809247c20a2731e8d3ab4afb7b46565",
+    "dependencies": [
+      "ddl/dim_shipping_region.sql"
+    ],
+    "generated_at": "2026-04-03T20:14:31.445059"
+  },
+  {
+    "path": "ddl/_grants.sql",
+    "purpose": "GRANT statements for PII tables",
+    "sha256": "85b4bc882094b8bb2f619823eed94fbbda29ccc8009f6c7c59f74c2630cdd2fc",
+    "dependencies": [],
+    "generated_at": "2026-04-03T20:14:31.445084"
+  }
+]

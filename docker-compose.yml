@@ -1,0 +1,91 @@
+version: "3.9"
+
+# DEAH — single-command startup.
+# Usage:
+#   docker-compose up --build          # first run
+#   docker-compose up                  # subsequent runs
+#   docker-compose down                # stop all
+#
+# Prerequisites (run once on the VM before docker-compose up):
+#   claude login     ← authenticates the Claude Agent SDK (no API key needed)
+#
+# After startup open http://35.209.107.68:6005, go to Admin (⚙ top bar) and set:
+#   Jira / GitHub credentials
+#   Agent Pod URLs are pre-configured to http://35.209.107.68:<port>
+
+services:
+
+  # ── Requirements Pod ─────────────────────────────────────────────────────────
+  requirements-pod:
+    build:
+      context: .
+      dockerfile: core/requirements_pod/Dockerfile
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    environment:
+      - LLM_PROVIDER=claude-code-sdk
+    volumes:
+      - requirements_storage:/app/local_storage
+      - requirements_db:/app/taskflow.db
+      - ~/.claude:/root/.claude:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Design Pod ────────────────────────────────────────────────────────────────
+  design-pod:
+    build:
+      context: .
+      dockerfile: core/design/Dockerfile
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env
+    environment:
+      - LLM_PROVIDER=claude-code-sdk
+    volumes:
+      - ~/.claude:/root/.claude:ro
+    restart: unless-stopped
+
+  # ── Development Pod ───────────────────────────────────────────────────────────
+  development-pod:
+    build:
+      context: .
+      dockerfile: core/development/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - ALLOWED_ORIGINS=*
+      - LLM_PROVIDER=claude-code-sdk
+    volumes:
+      - ~/.claude:/root/.claude:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend (nginx) ──────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: WebApp/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "6005:6005"
+    depends_on:
+      - requirements-pod
+      - design-pod
+      - development-pod
+    restart: unless-stopped
+
+volumes:
+  requirements_storage:
+  requirements_db:

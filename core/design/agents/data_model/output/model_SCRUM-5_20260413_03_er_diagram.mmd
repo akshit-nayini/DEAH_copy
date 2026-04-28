@@ -1,0 +1,19 @@
+erDiagram
+    stg_employees {
+        INT64 employee_id PK "Unique identifier for employee"
+        STRING first_name "Employee first name"
+        STRING last_name "Employee last name"
+        STRING email "Employee email address"
+        STRING phone_number "Employee phone number"
+        DATE hire_date "Employee hire date"
+        STRING job_id "Job identifier"
+        NUMERIC salary "Employee salary"
+        NUMERIC commission_pct "Commission percentage"
+        INT64 manager_id "Manager employee ID"
+        INT64 department_id "Department identifier"
+        STRING status "Employee status"
+        TIMESTAMP created_date "Record creation timestamp"
+        TIMESTAMP updated_date "Record update timestamp"
+    }
+    
+    stg_employees ||--o{ stg_employees : "manager_id"

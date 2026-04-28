@@ -1,0 +1,41 @@
+%% Architecture Flow: 5gcore | GCP | batch
+flowchart TB
+
+    subgraph rec["⭐ Option 3: Cloud Run Chunked Extractor + Cloud Workflows Orchestration + BigQuery Native Load — Recommended"]
+        I1["📥 Ingestion<br/>Cloud Run Jobs (Python, mysql-connector-python, Cloud SQL Auth Proxy serverless connector)"]
+        P1["⚙️ Processing<br/>Cloud Run Jobs (in-process schema validation + chunked extraction) + BigQuery Scripted SQL (post-load reconciliation and PK uniqueness assertion)"]
+        S1["💾 Storage<br/>GCS (transient chunked NDJSON staging) + BigQuery (target employees table + audit_log)"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Workflows + Cloud Scheduler"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring + Cloud Logging + Looker Studio"]
+        IaC1["🔨 IaC<br/>Terraform"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o1["Option 1: Dataflow JDBC Parallel Extraction + Cloud Composer Orchestration"]
+        I1["📥 Ingestion<br/>Cloud Dataflow with Apache Beam JDBC IO + Cloud SQL Auth Proxy"]
+        P1["⚙️ Processing<br/>Cloud Dataflow (Apache Beam 2.x transforms + BigQuery Scripted SQL)"]
+        S1["💾 Storage<br/>BigQuery + GCS (Dataflow staging)"]
+        C1["📊 Consumption<br/>Consumption"]
+        I1 --> P1 --> S1 --> C1
+    end
+
+    subgraph o2["Option 2: Dataproc Ephemeral Spark Cluster + Cloud Composer Orchestration"]
+        I2["📥 Ingestion<br/>Dataproc Ephemeral Cluster (Apache Spark 3.x JDBC + Cloud SQL Auth Proxy)"]
+        P2["⚙️ Processing<br/>Apache Spark 3.x on Dataproc + BigQuery Scripted SQL (reconciliation)"]
+        S2["💾 Storage<br/>GCS (staging Parquet) + BigQuery (target + audit_log)"]
+        C2["📊 Consumption<br/>Consumption"]
+        I2 --> P2 --> S2 --> C2
+    end
+
+    rec ~~~ o1
+    o1 ~~~ o2
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I1,P1,S1,C1,I2,P2,S2,C2 rejected

@@ -1,0 +1,37 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,notes
+Pub/Sub,orders.events,order_id,uuid,stg_order_events,order_id,STRING,CAST(order_id AS STRING),False,True,UUID from Pub/Sub JSON payload via Dataflow; cluster key; cross-path dedup join key
+Pub/Sub,orders.events,user_id,uuid,stg_order_events,user_id,STRING,CAST(user_id AS STRING),False,False,UUID from Pub/Sub JSON payload; NOT NULL in source
+Pub/Sub,orders.events,order_status,varchar,stg_order_events,order_status,STRING,CAST(order_status AS STRING),False,True,Event type classification from payload; cluster column for event-type dashboard filtering
+Pub/Sub,orders.events,total_amount,numeric,stg_order_events,total_amount,NUMERIC,CAST(total_amount AS NUMERIC),False,False,Order total at event emission time; NOT NULL in source
+Pub/Sub,orders.events,currency,varchar,stg_order_events,currency,STRING,CAST(currency AS STRING),False,False,ISO 4217 currency code from payload; NOT NULL in source
+Pub/Sub,orders.events,shipping_address,varchar,stg_order_events,shipping_address,STRING,CAST(shipping_address AS STRING),False,False,Nullable; from Pub/Sub JSON payload
+Pub/Sub,orders.events,payment_method,varchar,stg_order_events,payment_method,STRING,CAST(payment_method AS STRING),False,False,Nullable; from Pub/Sub JSON payload
+Pub/Sub,orders.events,order_date,date,stg_order_events,order_date,DATE,CAST(order_date AS DATE),True,False,DAY partition column for stg_order_events per functional requirement; NOT NULL in source
+Pub/Sub,orders.events,shipped_at,timestamp,stg_order_events,shipped_at,TIMESTAMP,CAST(shipped_at AS TIMESTAMP),False,False,Nullable; present only in order_shipped event payloads
+Pub/Sub,orders.events,delivered_at,timestamp,stg_order_events,delivered_at,TIMESTAMP,CAST(delivered_at AS TIMESTAMP),False,False,Nullable; present only in order_delivered event payloads
+Pub/Sub,orders.events,cancelled_at,timestamp,stg_order_events,cancelled_at,TIMESTAMP,CAST(cancelled_at AS TIMESTAMP),False,False,Nullable; present only in order_cancelled event payloads
+Pub/Sub,orders.events,created_at,timestamp,stg_order_events,created_at,TIMESTAMP,CAST(created_at AS TIMESTAMP),False,False,Original order creation timestamp carried in payload; NOT NULL in source
+Pub/Sub,orders.events,updated_at,timestamp,stg_order_events,updated_at,TIMESTAMP,CAST(updated_at AS TIMESTAMP),False,False,Last state-change timestamp; batch reconciliation compares this watermark to detect events missed by streaming path
+PostgreSQL,orders,order_id,uuid,stg_orders,order_id,STRING,CAST(order_id AS STRING),False,True,PK; NOT NULL and unique per acceptance criteria; MERGE key for batch upsert; cluster column
+PostgreSQL,orders,user_id,uuid,stg_orders,user_id,STRING,CAST(user_id AS STRING),False,False,UUID to STRING; NOT NULL in source
+PostgreSQL,orders,order_status,varchar,stg_orders,order_status,STRING,CAST(order_status AS STRING),False,True,Current lifecycle status; cluster column for status-filtered queries; NOT NULL in source
+PostgreSQL,orders,total_amount,numeric,stg_orders,total_amount,NUMERIC,CAST(total_amount AS NUMERIC),False,False,"Source precision/scale not specified; BigQuery NUMERIC gives 29-digit precision, 9 decimal places; NOT NULL in source"
+PostgreSQL,orders,currency,varchar,stg_orders,currency,STRING,CAST(currency AS STRING),False,False,ISO 4217 currency code; NOT NULL in source
+PostgreSQL,orders,shipping_address,varchar,stg_orders,shipping_address,STRING,CAST(shipping_address AS STRING),False,False,Nullable in source; no length constraint in source schema
+PostgreSQL,orders,payment_method,varchar,stg_orders,payment_method,STRING,CAST(payment_method AS STRING),False,False,Nullable in source; no length constraint in source schema
+PostgreSQL,orders,order_date,date,stg_orders,order_date,DATE,CAST(order_date AS DATE),True,False,DAY partition column for stg_orders per functional requirement; NOT NULL in source
+PostgreSQL,orders,shipped_at,timestamp,stg_orders,shipped_at,TIMESTAMP,CAST(shipped_at AS TIMESTAMP),False,False,Nullable; null until order ships
+PostgreSQL,orders,delivered_at,timestamp,stg_orders,delivered_at,TIMESTAMP,CAST(delivered_at AS TIMESTAMP),False,False,Nullable; null until order is delivered
+PostgreSQL,orders,cancelled_at,timestamp,stg_orders,cancelled_at,TIMESTAMP,CAST(cancelled_at AS TIMESTAMP),False,False,Nullable; null unless order is cancelled
+PostgreSQL,orders,created_at,timestamp,stg_orders,created_at,TIMESTAMP,CAST(created_at AS TIMESTAMP),False,False,Source creation timestamp; NOT NULL; preserved as-is
+PostgreSQL,orders,updated_at,timestamp,stg_orders,updated_at,TIMESTAMP,CAST(updated_at AS TIMESTAMP),False,False,Incremental watermark; DAG filters WHERE updated_at > last_high_watermark on each 02:00 UTC run; NOT NULL in source
+PostgreSQL,order_items,item_id,bigint,stg_order_items,item_id,INT64,CAST(item_id AS INT64),False,False,PK; NOT NULL; MERGE key for batch upsert; bigint maps directly to INT64
+PostgreSQL,order_items,order_id,uuid,stg_order_items,order_id,STRING,CAST(order_id AS STRING),False,True,FK to stg_orders.order_id; NOT NULL; cluster column for order-level aggregations
+PostgreSQL,order_items,product_id,uuid,stg_order_items,product_id,STRING,CAST(product_id AS STRING),False,True,UUID to STRING; NOT NULL; cluster column for product analytics
+PostgreSQL,order_items,product_name,varchar,stg_order_items,product_name,STRING,CAST(product_name AS STRING),False,False,Product name at order time; NOT NULL in source
+PostgreSQL,order_items,quantity,integer,stg_order_items,quantity,INT64,CAST(quantity AS INT64),False,False,32-bit integer widened to INT64; NOT NULL in source; no data loss
+PostgreSQL,order_items,unit_price,numeric,stg_order_items,unit_price,NUMERIC,CAST(unit_price AS NUMERIC),False,False,Per-unit price; NOT NULL in source; source precision/scale not specified
+PostgreSQL,order_items,discount_amount,numeric,stg_order_items,discount_amount,NUMERIC,CAST(discount_amount AS NUMERIC),False,False,Nullable; null when no discount applied to the line item
+PostgreSQL,order_items,line_total,numeric,stg_order_items,line_total,NUMERIC,CAST(line_total AS NUMERIC),False,False,Net line value after discount; NOT NULL in source
+PostgreSQL,order_items,created_at,timestamp,stg_order_items,created_at,TIMESTAMP,CAST(created_at AS TIMESTAMP),True,False,DAY partition column for stg_order_items; surrogate for order_date which is absent from source order_items table; NOT NULL in source
+PostgreSQL,order_items,updated_at,timestamp,stg_order_items,updated_at,TIMESTAMP,CAST(updated_at AS TIMESTAMP),False,False,Incremental watermark; DAG filters WHERE updated_at > last_high_watermark on each 02:00 UTC run; NOT NULL in source

@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + GCS Staging + BigQuery-Native Stored Procedure Pipeline",
+  "pattern_type": "hybrid",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud SQL Auth Proxy + pymysql via Composer PythonOperator",
+    "processing": "BigQuery LOAD DATA + Stored Procedure sp_mysqltobq_load.sql",
+    "storage": "GCS (staging) + BigQuery (verizon_data_dea + verizon_data_audit)",
+    "orchestration": "Cloud Composer 2 (Apache Airflow 2.9)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer 2 DAGs execute Python operators that connect to Cloud SQL MySQL (agentichub) via Cloud SQL Auth Proxy and pymysql, extracting full or incremental record sets to a dedicated GCS staging bucket as delimited CSV; watermark checkpoints (max updated_date per table) are persisted in a BigQuery audit control table to drive incremental change detection.",
+    "2. Processing: BigQuery LOAD DATA from GCS CSV into a raw staging table, followed by invocation of sp_mysqltobq_load.sql stored procedure via BigQueryInsertJobOperator; the stored procedure executes MERGE on employee_id and updated_date keys enforcing upsert semantics; post-load Composer tasks run row count reconciliation, PK uniqueness checks, null constraint, and datatype assertions.",
+    "3. Storage: GCS bucket (gcs://5gcore-staging/agentichub/) for transient CSV staging files with object lifecycle policy auto-deleting after confirmed load; BigQuery dataset verizon_data_dea as analytical store with 60-day partition expiry on the employees table; BigQuery audit dataset verizon_data_audit hosting load_log, schema_drift_log, and reconciliation_log tables.",
+    "4. Consumption: Looker Studio dashboards connected directly to BigQuery verizon_data_audit tables enabling stakeholder self-service visibility into load history, record counts, schema drift events, and validation outcomes without engineering involvement; Cloud Monitoring alerting policies trigger email or webhook notifications on DAG failure, data quality assertion failures, or row count mismatches exceeding defined thresholds."
+  ],
+  "key_constraints": [
+    "Block incremental load pipeline from starting until full historical load validation is confirmed and passes; support hourly and daily scheduling cadences independently per table",
+    "Perform row count reconciliation between MySQL and BigQuery after every load; pipeline must support retry at each stage without re-querying MySQL on partial failure",
+    "Execute all load logic via stored procedure sp_mysqltobq_load.sql with merge key on employee_id and updated_date",
+    "Enforce a 60-day data retention policy on the target BigQuery table",
+    "Provide stakeholder-accessible dashboards or log views enabling independent review of load success and execution history without engineering involvement"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Completeness \u2014 Historical Load Baseline",
+      "mitigation": "Implement a three-stage historical validation checkpoint in Composer before setting historical_load_complete: (1) exact row count match between MySQL COUNT(*) and BigQuery COUNT(*), (2) primary key uniqueness assertion confirming zero duplicate employee_id values, (3) null constraint verification against schema definitions. The incremental DAG uses an ExternalTaskSensor that passes only when all three checkpoints succeed and the BigQuery control flag is set exclusively by the Composer validation task."
+    },
+    {
+      "risk": "Schema Drift \u2014 MySQL Source Schema Changes",
+      "mitigation": "A pre-load schema validation Composer task fetches MySQL INFORMATION_SCHEMA and compares it against the registered BigQuery table schema before every load run. Drift is logged to schema_drift_log with full column-level diff. Additive changes trigger an automated BigQuery ALTER TABLE and a non-blocking warning alert. Destructive changes block the load task and raise a P1 alert requiring engineering sign-off before the run resumes."
+    },
+    {
+      "risk": "Access Control \u2014 Stakeholder Data Exposure",
+      "mitigation": "Looker Studio data sources are restricted exclusively to the verizon_data_audit dataset containing load logs and reconciliation summaries; direct access to verizon_data_dea raw tables is not granted to stakeholder accounts. Column-level security policies are applied to sensitive employee fields in BigQuery. IAM access is reviewed quarterly and access changes are logged in Cloud Audit Logs."
+    }
+  ],
+  "scoring_one_liner": "Scored 7.45/10 \u2014 Cost 7, Scalability 8, Complexity 7, Latency 7, Operability 9. Trade-offs accepted: Cloud Composer's fixed baseline cost of approximately $300-600 per month is accepted in exchange for native workflow dependency management, ExternalTaskSensor-based historical gate enforcement, and the operational maturity of the Airflow UI for pipeline troubleshooting. GCS staging overhead of five to ten minutes per run is accepted given the hourly SLA has ample headroom. CSV datatype fidelity risk is accepted with a documented mitigation of explicit extraction quoting rules and post-load constraint validation embedded in the stored procedure execution flow.",
+  "open_blockers": [
+    "Has VPC network connectivity from the Cloud Composer 2 environment to Cloud SQL instance verizon-data:us-central1:mysql-druid-metadatastore been established via VPC peering or Private Service Connect? This is a hard deployment blocker and must be validated before any pipeline provisioning proceeds.",
+    "What is the full and approved list of MySQL tables in the agentichub database that require historical and incremental loads? The source_tables field lists only employees; the complete table inventory is required to design the Composer DAG fan-out pattern, size the GCS staging bucket, and determine per-table scheduling cadences.",
+    "Has sp_mysqltobq_load.sql been validated for idempotency on re-execution? If a Composer DAG retries after a partial failure, the MERGE must not produce duplicate records, corrupt updated_date watermarks, or apply out-of-order updates; a formal idempotency test must be documented before production deployment."
+  ],
+  "ticket_id": "SCRUM-160"
+}

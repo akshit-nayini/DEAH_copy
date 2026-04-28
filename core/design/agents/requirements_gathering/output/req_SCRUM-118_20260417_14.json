@@ -1,0 +1,122 @@
+{
+  "source": "jira",
+  "ticket_id": "SCRUM-118",
+  "request_type": "new development",
+  "run_plan": [
+    "data_model",
+    "architecture",
+    "implementation_steps"
+  ],
+  "project_name": "Order Analytics Platform",
+  "objective": "Order data needs to be available in two ways \u2014 real-time order status events streamed from Google Pub/Sub for live dashboards, and a daily batch reconciliation from the PostgreSQL operational database to correct any missed or late-arriving events. Both paths write to the same BigQuery dataset using a Lambda architecture.",
+  "business_context": "The Order Analytics Platform enables real-time visibility into order lifecycle status for live operational dashboards while guaranteeing data completeness and accuracy through daily batch reconciliation. The Lambda architecture supports both sub-minute event-driven analytics and reliable full historical order records for business reporting, with stakeholder John as the primary owner.",
+  "functional_requirements": [
+    "Consume order status events (order_placed, order_shipped, order_delivered, order_cancelled) from Pub/Sub topic orders.events via Dataflow and write to the order_events table in real-time",
+    "Perform daily incremental load from PostgreSQL orders and order_items tables using the updated_at watermark",
+    "Both streaming and batch paths write to the verizon_orders_deah dataset in BigQuery project verizon-data",
+    "Batch path reconciles any missed or late-arriving events not captured by the streaming path",
+    "Deduplicate records on event_id and order_id primary keys across both streaming and batch paths",
+    "Partition all BigQuery target tables by event_date and order_date",
+    "Log pipeline execution results to pipeline_audit.pipeline_run_log for every run"
+  ],
+  "data_requirements": {
+    "source_systems": [
+      "Google Pub/Sub (project: verizon-data, topic: orders.events) \u2014 event types: order_placed, order_shipped, order_delivered, order_cancelled",
+      "PostgreSQL 13 (host: orders-db.corp.com, port: 5432, database: orders_db, schema: public, tables: orders, order_items)"
+    ],
+    "data_types": [
+      "Streaming: order status events with typed event classifications (order_placed, order_shipped, order_delivered, order_cancelled)",
+      "Batch: relational transactional records \u2014 order headers and order line items"
+    ],
+    "volume": "~5 GB/day via streaming path + ~10 GB/day via batch path (~15 GB/day total)",
+    "frequency": "Streaming: real-time continuous ingestion; Batch: daily incremental load scheduled at 02:00 UTC"
+  },
+  "technology": {
+    "stack": [
+      "Google Pub/Sub",
+      "Google Dataflow",
+      "Google BigQuery",
+      "Cloud Composer",
+      "PostgreSQL 13"
+    ],
+    "environment": "production",
+    "cloud_or_onprem": "cloud",
+    "preferred_tools": [
+      "Dataflow",
+      "Cloud Composer"
+    ]
+  },
+  "non_functional": {
+    "performance": "~2,000 events/second peak throughput on the streaming path; ~10 GB/day batch data volume",
+    "scalability": "Dataflow streaming job auto-scales between 2 and 10 workers based on load",
+    "latency": "Data available in BigQuery within 60 seconds of Pub/Sub publish",
+    "sla": "Batch DAG must complete before 04:00 AM UTC daily; batch job scheduled at 02:00 UTC via Cloud Composer"
+  },
+  "security": {
+    "data_sensitivity": null,
+    "access_controls": null,
+    "compliance": null
+  },
+  "constraints": {
+    "budget": null,
+    "timeline": null,
+    "technical_limitations": null
+  },
+  "existing_architecture": null,
+  "source_connections": [
+    {
+      "db_type": "pubsub",
+      "database": "verizon-data",
+      "instance_connection_name": null,
+      "host": null,
+      "port": null,
+      "username": null,
+      "source_tables": [
+        "orders.events"
+      ]
+    },
+    {
+      "db_type": "postgres",
+      "database": "orders_db",
+      "instance_connection_name": null,
+      "host": "orders-db.corp.com",
+      "port": "5432",
+      "username": "sa",
+      "source_tables": [
+        "orders",
+        "order_items"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Order events will be visible in BigQuery within 60 seconds of Pub/Sub publish via the streaming path",
+    "Full reconciled order history will be available by 04:00 AM UTC daily via the batch path",
+    "Both streaming and batch paths target the verizon_orders_deah dataset in BigQuery project verizon-data",
+    "Target BigQuery tables are order_events, orders, and order_items within the verizon_orders_deah dataset"
+  ],
+  "inferred_assumptions": [
+    "Environment assumed to be production given the operational SLA requirements (60-second streaming latency, 04:00 UTC batch completion deadline) and stakeholder-driven delivery mandate"
+  ],
+  "acceptance_criteria": [
+    "Streaming and batch row counts reconcile within 0.1% tolerance on a daily basis",
+    "No duplicate order_id exists in the orders table after batch upsert",
+    "Dataflow streaming job auto-scales between 2 and 10 workers based on load",
+    "Batch DAG completes before 04:00 AM UTC daily",
+    "order_id must be not null and unique in the orders table",
+    "event_id must be not null and unique in the order_events table",
+    "Pipeline execution results are logged to pipeline_audit.pipeline_run_log for every pipeline run"
+  ],
+  "expected_outputs": [
+    "Real-time order events written to BigQuery table order_events (dataset: verizon_orders_deah, project: verizon-data) within 60 seconds of Pub/Sub publish",
+    "Daily reconciled orders table in BigQuery dataset verizon_orders_deah, fully upserted and available by 04:00 AM UTC",
+    "Daily reconciled order_items table in BigQuery dataset verizon_orders_deah, fully upserted and available by 04:00 AM UTC",
+    "Pipeline audit logs written to pipeline_audit.pipeline_run_log capturing run metadata for both streaming and batch paths"
+  ],
+  "classification": {
+    "ingestion_type": "streaming",
+    "output_type": "pipeline"
+  },
+  "confidence": 0.91,
+  "low_confidence_warning": "The pipeline is explicitly described as hybrid (batch + streaming Lambda architecture); ingestion_type has been set to 'streaming' as the primary classification since no hybrid option exists in the allowed values, but the daily batch reconciliation path is an equally critical and fully specified design component.",
+  "raw_text": "Ticket: SCRUM-118\nSummary:  Build Hybrid Batch + Streaming Pipeline for Order Analytics \u2014 New Development\nStatus: To Do\nPriority: Medium\nAssignee: Unassigned\nDescription:\nProject Name: Order Analytics Platform Requirement Type: New Development Stakeholder: John Objective Order data needs to be available in two ways \u2014 real-time order status events streamed from Google Pub/Sub for live dashboards, and a daily batch reconciliation from the PostgreSQL operational database to correct any missed or late-arriving events. Both paths write to the same BigQuery dataset (Lambda architecture). Expected Outcome: Order events visible in BigQuery within 60 seconds via streaming path. Full reconciled order history available by 04:00 AM UTC daily via batch path. Both paths write to verizon_orders_deah dataset in BigQuery project verizon-data. Connections and DB Details Source 1 (Streaming): Google Pub/Sub, Project: verizon-data, Topic: orders.events, Event types: order_placed / order_shipped / order_delivered / order_cancelled Source 2 (Batch): PostgreSQL 13, Host: orders-db.corp.com , Port: 5432, Database: orders_db, Schema: public, Tables: orders, order_items, Username: sa Target: BigQuery project verizon-data, Dataset: verizon_orders_deah, Tables: order_events, orders, order_items Functional Requirements Streaming: Consume order status events from Pub/Sub via Dataflow, write to order_events table in real-time Batch: Daily incremental load from PostgreSQL orders and order_items tables using updated_at watermark Both paths write to the same BigQuery dataset \u2014 batch reconciles what streaming may have missed Deduplicate on event_id and order_id primary keys across both paths Partition all tables by event_date and order_date in BigQuery Non-Functional Requirements Streaming latency: Data available in BigQuery within 60 seconds of Pub/Sub publish Batch schedule: Daily at 02:00 UTC via Cloud Composer Throughput: ~2,000 events/second peak on streaming path Data volume: ~5GB/day streaming + ~10GB daily batch Acceptance Criteria Success Conditions: Streaming and batch row counts reconcile within 0.1% tolerance daily No duplicate order_id in orders table after batch upsert Dataflow streaming job auto-scales between 2\u201310 workers based on load Batch DAG completes before 04:00 AM UTC daily Validation Rules: order_id must be not null and unique in orders table event_id must be not null and unique in order_events table Results logged to pipeline_audit.pipeline_run_log"
+}

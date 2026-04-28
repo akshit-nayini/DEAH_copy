@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Test Case Generator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1e293b;}
+.hdr{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;padding:20px 28px;}
+.hdr h1{font-size:1.35rem;font-weight:700;}
+.hdr p{font-size:.82rem;opacity:.6;margin-top:4px;}
+.wrap{max-width:1400px;margin:24px auto;padding:0 18px;}
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:22px;margin-bottom:18px;}
+label{font-weight:600;font-size:.88rem;display:block;margin-bottom:5px;}
+textarea{width:100%;padding:9px 11px;border:1.5px solid #d1d5db;border-radius:7px;
+  font-size:.85rem;font-family:inherit;resize:vertical;min-height:180px;}
+textarea:focus{outline:none;border-color:#0f3460;}
+input[type=text]{width:100%;padding:8px 11px;border:1.5px solid #d1d5db;border-radius:7px;
+  font-size:.85rem;font-family:inherit;}
+input[type=text]:focus{outline:none;border-color:#0f3460;}
+.row2{display:flex;gap:18px;}
+.col2{flex:1;}
+.btn{display:inline-block;padding:10px 24px;border:none;border-radius:7px;
+  font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.btn:hover{opacity:.88;}
+.btn-main{background:linear-gradient(135deg,#0f3460,#533483);color:#fff;}
+.btn-git {background:#1d4ed8;color:#fff;}
+.btn-reuse{background:linear-gradient(135deg,#b45309,#d97706);color:#fff;}
+.btn-sm{padding:6px 14px;font-size:.8rem;font-weight:600;border-radius:6px;
+  cursor:pointer;border:1.5px solid #6b7280;background:#fff;}
+.btn-green{border-color:#16a34a;color:#16a34a;}
+/* Proceed to Validation */
+.val-opts{display:flex;gap:10px;margin-bottom:18px;}
+.val-opt{flex:1;padding:14px 18px;border-radius:9px;border:2px solid #e2e8f0;
+  background:#f8fafc;cursor:pointer;font-size:.88rem;font-weight:600;text-align:center;
+  transition:border-color .15s,background .15s;}
+.val-opt:hover{border-color:#6366f1;background:#eef2ff;}
+.val-opt.active{border-color:#6366f1;background:#eef2ff;color:#4338ca;}
+.val-opt .opt-icon{font-size:1.6rem;display:block;margin-bottom:6px;}
+.db-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.db-grid .span2{grid-column:span 2;}
+/* Mode selector */
+.mode-section{margin-top:16px;}
+.mode-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.mode-btn{padding:9px 20px;border-radius:7px;border:2px solid #d1d5db;background:#fff;
+  font-size:.84rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.mode-btn:hover{border-color:#0f3460;color:#0f3460;}
+.mode-btn.active{border-color:#0f3460;background:#0f3460;color:#fff;}
+.mode-btn.m-edge{border-color:#7c3aed;}
+.mode-btn.m-edge.active{background:#7c3aed;border-color:#7c3aed;}
+.mode-btn.m-cr{border-color:#b45309;}
+.mode-btn.m-cr.active{background:#b45309;border-color:#b45309;}
+.mode-btn.m-exist{border-color:#065f46;}
+.mode-btn.m-exist.active{background:#065f46;border-color:#065f46;}
+/* Category panel */
+.cat-section{margin-top:14px;}
+.cat-panel{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:14px 18px;}
+.cat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cat-grid{display:flex;flex-wrap:wrap;gap:8px 16px;}
+.cat-cb{display:flex;align-items:center;gap:5px;font-size:.83rem;font-weight:500;cursor:pointer;}
+.cat-cb input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#0f3460;}
+/* CR panel */
+.cr-panel{margin-top:12px;padding:12px 14px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;display:none;}
+/* ICD picker table */
+.icd-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.icd-table th{background:#e0f2fe;padding:6px 10px;text-align:left;font-size:.7rem;
+  text-transform:uppercase;letter-spacing:.03em;border-bottom:2px solid #bae6fd;}
+.icd-table td{padding:7px 10px;border-bottom:1px solid #e0f2fe;cursor:pointer;}
+.icd-table tr:hover td{background:#f0f9ff;}
+.icd-table tr.selected td{background:#bfdbfe;}
+.icd-table tr.source-row td{background:#fef9c3;}
+.icd-table tr.source-row.selected td{background:#fde68a;}
+.icd-scrum{font-weight:700;font-family:monospace;font-size:.82rem;}
+.icd-new-badge{display:inline-block;padding:1px 7px;border-radius:20px;font-size:.68rem;
+  font-weight:700;background:#dcfce7;color:#15803d;margin-left:5px;border:1px solid #86efac;}
+/* Banners */
+.reuse-banner{background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;
+  padding:12px 16px;margin-top:12px;display:none;font-size:.85rem;}
+.reuse-banner strong{color:#92400e;}
+.badge-new{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.73rem;
+  font-weight:700;background:#d1fae5;color:#065f46;margin-left:6px;border:1px solid #6ee7b7;}
+.badge-reuse{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.73rem;
+  font-weight:700;background:#fef3c7;color:#92400e;margin-left:8px;}
+.badge-cr{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.73rem;
+  font-weight:700;background:#ffedd5;color:#b45309;margin-left:8px;}
+.badge-edge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.73rem;
+  font-weight:700;background:#ede9fe;color:#6d28d9;margin-left:8px;}
+.git-label{margin-top:7px;font-size:.78rem;color:#6b7280;display:none;}
+.err{background:#fee2e2;color:#b91c1c;border-left:4px solid #b91c1c;
+  padding:10px 14px;border-radius:6px;margin-top:12px;font-size:.87rem;display:none;}
+/* Spinner */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;
+  align-items:center;justify-content:center;flex-direction:column;color:#fff;}
+.ov.on{display:flex;}
+.spin{width:46px;height:46px;border:5px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;margin-bottom:14px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+/* Stats */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.stat{border-radius:9px;padding:12px 14px;text-align:center;min-width:90px;}
+.stat .n{font-size:1.6rem;font-weight:800;line-height:1;}
+.stat .l{font-size:.68rem;font-weight:700;text-transform:uppercase;opacity:.7;margin-top:3px;}
+.s-tot{background:#eff6ff;color:#1d4ed8;}
+/* Progress */
+.prog-row{display:flex;justify-content:space-between;font-size:.77rem;font-weight:600;margin-bottom:4px;}
+.prog{height:8px;border-radius:7px;background:#e5e7eb;overflow:hidden;margin-bottom:16px;}
+.prog-inner{height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);transition:width .4s;}
+/* Table */
+.toolbar{display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+.filters{display:flex;gap:6px;flex-wrap:wrap;}
+.filt{padding:4px 12px;border-radius:20px;border:1.5px solid #d1d5db;
+  background:#fff;font-size:.77rem;font-weight:600;cursor:pointer;}
+.filt.on{background:#0f3460;color:#fff;border-color:#0f3460;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+thead th{background:#f8fafc;padding:8px 10px;text-align:left;
+  font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;
+  border-bottom:2px solid #e2e8f0;white-space:nowrap;}
+tbody td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
+tbody tr:hover{background:#f8fafc;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:700;}
+/* Category badge colours */
+.b-schema{background:#dbeafe;color:#1d4ed8;}
+.b-null{background:#fef9c3;color:#a16207;}
+.b-boundary{background:#fce7f3;color:#9d174d;}
+.b-format{background:#e0f2fe;color:#0369a1;}
+.b-length{background:#f0fdf4;color:#15803d;}
+.b-dupes{background:#fff7ed;color:#c2410c;}
+.b-special{background:#faf5ff;color:#7e22ce;}
+.b-enum{background:#ecfdf5;color:#065f46;}
+.b-pii{background:#fee2e2;color:#b91c1c;}
+.b-dq{background:#dcfce7;color:#15803d;}
+.b-part{background:#ffedd5;color:#c2410c;}
+.b-air{background:#ede9fe;color:#6d28d9;}
+/* Priority badges */
+.b-hi{background:#fee2e2;color:#b91c1c;}
+.b-md{background:#fef9c3;color:#a16207;}
+.b-lo{background:#f0fdf4;color:#15803d;}
+/* Regression badge */
+.b-reg{background:#fff7ed;color:#b45309;border:1px solid #fdba74;}
+code{display:block;max-width:260px;max-height:70px;overflow:auto;
+  font-size:.69rem;background:#f1f5f9;padding:3px 6px;border-radius:4px;white-space:pre-wrap;}
+.csv-note{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;
+  padding:10px 16px;font-size:.83rem;color:#15803d;margin-bottom:14px;}
+.detail-cell{max-width:200px;font-size:.78rem;color:#374151;white-space:pre-wrap;word-break:break-word;}
+</style>
+</head>
+<body>
+
+<div class="ov" id="ov">
+  <div class="spin"></div>
+  <div id="ovMsg" style="font-size:1rem;font-weight:600;">Please wait...</div>
+</div>
+
+<div class="hdr">
+  <h1>Test Case Generator &mdash; Testing POD</h1>
+  <p>Load from Git or paste your ICD and Acceptance Criteria, then select a mode and generate.</p>
+</div>
+
+<div class="wrap">
+
+  <!-- INPUT CARD -->
+  <div class="card" id="inputCard">
+
+    <!-- ICD + AC -->
+    <div class="row2">
+      <div class="col2">
+        <label>ICD Document</label>
+        <textarea id="icdText" placeholder="Paste ICD content here...&#10;&#10;Include: table name, schema, columns, data types, partition info, constraints, etc."></textarea>
+      </div>
+      <div class="col2">
+        <label>Acceptance Criteria</label>
+        <textarea id="acText" placeholder="Paste acceptance criteria here...&#10;&#10;e.g.&#10;AC-01: No nulls in primary key&#10;AC-02: Row count matches source&#10;AC-03: Pipeline completes within 1 hour"></textarea>
+      </div>
+    </div>
+    <div class="git-label" id="gitLabel">Loaded: <strong id="gitFile"></strong></div>
+
+    <!-- MODE SELECTOR -->
+    <div class="mode-section">
+      <label>Project Mode</label>
+      <div class="mode-row">
+        <button class="mode-btn active"      data-mode="new"      onclick="setMode(this)">&#9889; New Project</button>
+        <button class="mode-btn m-exist"     data-mode="existing" onclick="setMode(this)">&#10133; Existing Project</button>
+        <button class="mode-btn m-cr"        data-mode="cr"       onclick="setMode(this)">&#9998; Change Request</button>
+        <button class="mode-btn m-edge"      data-mode="edge"     onclick="setMode(this)">&#128312; Edge Cases</button>
+      </div>
+      <div id="modeDesc" style="font-size:.8rem;color:#6b7280;margin-top:6px;">
+        Generates all selected categories from scratch.
+      </div>
+    </div>
+
+    <!-- CHANGE REQUEST: changed columns input — right below mode selector so it's immediately visible -->
+    <div class="cr-panel" id="crPanel">
+      <label>&#9998; Changed Columns
+        <span style="font-weight:400;color:#92400e;">Enter the column names that were modified in the new ICD (comma-separated)</span>
+      </label>
+      <input id="crCols" type="text"
+             placeholder="e.g.  salary, employment_type, hire_date"
+             style="border-color:#fcd34d;"/>
+      <div style="margin-top:5px;font-size:.78rem;color:#92400e;">
+        The system will generate new test cases for these columns and flag any existing TCs that covered them as [REGRESSION].
+      </div>
+      <label style="margin-top:12px;">&#128221; Change Reason
+        <span style="font-weight:400;color:#92400e;">Brief justification for this change request (for audit trail)</span>
+      </label>
+      <input id="crReason" type="text"
+             placeholder="e.g.  Added salary_band column per SCRUM-7 — new compensation tier requirement"
+             style="border-color:#fcd34d;"/>
+    </div>
+
+    <!-- ICD PICKER — shown for Existing Project and Change Request modes -->
+    <div id="icdPickerPanel" style="display:none;margin-top:14px;padding:14px 18px;
+         background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <label style="margin:0;color:#0369a1;">Select ICD Version</label>
+        <button class="btn btn-sm" onclick="refreshIcdList()" style="font-size:.77rem;">&#8635; Refresh from Git</button>
+      </div>
+      <!-- Source ICD info banner -->
+      <div id="sourceIcdBanner" style="display:none;margin-bottom:10px;padding:8px 12px;
+           background:#fff;border:1px solid #bae6fd;border-radius:6px;font-size:.82rem;color:#0369a1;">
+      </div>
+      <!-- ICD file list -->
+      <div id="icdFileList" style="max-height:180px;overflow-y:auto;">
+        <span style="color:#9ca3af;font-size:.82rem;">Loading ICD files...</span>
+      </div>
+      <div style="margin-top:8px;font-size:.78rem;color:#6b7280;">
+        Select the ICD version to compare against. The highlighted row is the original source ICD for your existing test cases.
+      </div>
+    </div>
+
+    <!-- CATEGORY CHECKBOXES -->
+    <div class="cat-section" id="catSection">
+      <div class="cat-panel">
+        <div class="cat-header">
+          <label style="margin:0;">Validation Categories</label>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm" onclick="selectAll()">Select All</button>
+            <button class="btn btn-sm" onclick="deselectAll()">Deselect All</button>
+          </div>
+        </div>
+        <div class="cat-grid" id="catGrid">
+          <!-- populated by loadCategories() on page load -->
+          <span style="color:#9ca3af;font-size:.82rem;">Loading categories...</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="errBox" class="err"></div>
+
+    <!-- Repurpose banner -->
+    <div class="reuse-banner" id="reuseBanner">
+      &#128194; <strong>Existing test cases found:</strong> <span id="reuseFile"></span>
+      &mdash; <span id="reuseCount"></span> test cases available to repurpose.
+    </div>
+
+    <!-- ACTIONS -->
+    <div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-main"  onclick="doGenerate()">&#9889; Generate</button>
+      <button class="btn btn-reuse" id="reuseBtn" onclick="doRepurpose()" style="display:none;">&#9851; Repurpose Existing</button>
+      <button class="btn btn-git"   onclick="loadFromGit()">&#8595; Load Latest from Git</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resWrap" style="display:none;">
+
+    <div class="csv-note" id="csvNote"></div>
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="stats-row" id="statsRow">
+        <div class="stat s-tot"><div class="n" id="sT">0</div><div class="l">Total</div></div>
+      </div>
+      <div class="prog-row"><span id="progLabel" style="color:#6366f1;"></span></div>
+      <div class="prog"><div class="prog-inner" id="progBar" style="width:0%"></div></div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="toolbar">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-sm" onclick="toggleDetail()" id="dtBtn">Show Detail</button>
+          <button class="btn btn-sm" id="newOnlyBtn" onclick="toggleNewOnly()"
+                  style="display:none;background:#fffbeb;border-color:#f59e0b;color:#b45309;font-weight:700;">
+            &#9998; Showing New TCs Only
+          </button>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center;">
+          <a href="/export/csv"   class="btn btn-sm">Download CSV</a>
+          <a href="/export/excel" class="btn btn-sm btn-green">Download Excel</a>
+          <button class="btn btn-sm" id="saveGitBtn" onclick="saveToGit()"
+                  style="background:#4f46e5;border-color:#4f46e5;color:#fff;font-weight:700;">
+            &#128190; Save to Git
+          </button>
+          <span id="saveGitStatus" style="font-size:12px;"></span>
+          <button class="btn btn-sm" onclick="doReset()">New</button>
+        </div>
+      </div>
+
+      <!-- Compact filter bar (populated dynamically) -->
+      <div class="filters" id="filterRow" style="margin-bottom:10px;"></div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr id="thead">
+              <th>TC ID</th><th>Category</th><th>Column</th>
+              <th>Test Name</th><th>Description</th>
+              <th>BQ Query</th><th>Expected Result</th>
+              <th>Priority</th><th>AC</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Detail section (extra fields) -->
+      <div id="dtSec" style="display:none;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:14px;">
+        <div style="font-size:.8rem;color:#6b7280;margin-bottom:8px;">
+          Showing extended fields: Precondition, Input Data, Steps, SQL Hint
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>TC ID</th><th>Category</th><th>Column</th>
+                <th>Precondition</th><th>Input Data</th>
+                <th>Steps</th><th>SQL Hint</th>
+              </tr>
+            </thead>
+            <tbody id="tbody2"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proceed to Validation card -->
+    <div class="card" id="nextCard" style="border:2px solid #6366f1;">
+      <div style="font-weight:700;font-size:1rem;margin-bottom:16px;">&#128640; Proceed to Validation</div>
+
+      <!-- Option toggle -->
+      <div class="val-opts">
+        <div class="val-opt active" id="optSrcDb" onclick="setValidationMode('source_db')">
+          <span class="opt-icon">&#128202;</span>
+          Source DB Available<br>
+          <span style="font-size:.77rem;font-weight:400;color:#6b7280;">Connect to MySQL source and validate against BQ target</span>
+        </div>
+        <div class="val-opt" id="optSynth" onclick="setValidationMode('synthetic')">
+          <span class="opt-icon">&#9881;</span>
+          No Source DB<br>
+          <span style="font-size:.77rem;font-weight:400;color:#6b7280;">Generate synthetic data, then validate against BQ target</span>
+        </div>
+      </div>
+
+      <!-- Source DB panel -->
+      <div id="srcDbPanel">
+        <div id="dbConfigInfo" style="font-size:.83rem;color:#475569;background:#f8fafc;
+             border:1.5px solid #e2e8f0;border-radius:7px;padding:10px 14px;margin-bottom:12px;">
+          Reading connection from <code style="font-size:.8rem;">db_config.json</code>…
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-sm" id="testConnBtn" onclick="testDbConn()"
+                  style="background:#0891b2;border-color:#0891b2;color:#fff;font-weight:700;">
+            &#128268; Test Connection
+          </button>
+          <span id="dbConnStatus" style="font-size:.83rem;"></span>
+          <button class="btn btn-sm" id="goValidatorSrcBtn" onclick="goToValidator('source_db')"
+                  style="background:#6366f1;border-color:#6366f1;color:#fff;font-weight:700;margin-left:auto;">
+            Go to Validator &#8594;
+          </button>
+        </div>
+      </div>
+
+      <!-- Synthetic data panel -->
+      <div id="synthPanel" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-sm" id="synthBtn" onclick="generateSynthetic()"
+                  style="background:#0891b2;border-color:#0891b2;color:#fff;font-weight:700;">
+            &#9881; Generate Synthetic Data
+          </button>
+          <span id="synthStatus" style="font-size:.83rem;"></span>
+          <button class="btn btn-sm" id="goValidatorSynthBtn" onclick="goToValidator('synthetic')"
+                  style="background:#6366f1;border-color:#6366f1;color:#fff;font-weight:700;
+                         opacity:.4;cursor:not-allowed;margin-left:auto;" disabled>
+            Go to Validator &#8594;
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var all          = [];
+var allNew       = [];   // CR mode: only the newly generated TCs
+var showNewOnly  = false;
+var dtOpen       = false;
+var currentIcdFile  = '';
+var currentMode     = 'new';
+var _allCats        = [];
+var _edgeCats       = [];
+var _icdFiles       = [];
+var _sourceIcdInfo  = null;
+var _selectedIcdFile = '';
+
+var MODE_DESCS = {
+  'new':      'Generates all selected categories from scratch.',
+  'existing': 'Detects new columns vs existing test cases — generates only for new columns.',
+  'cr':       'Generates test cases for the changed columns only, and flags affected existing TCs as [REGRESSION].',
+  'edge':     'Auto-selects Boundary Values, Null/Empty, Special Characters for edge-case focused testing.',
+};
+
+window.addEventListener('load', function(){
+  checkExisting();
+  loadCategories();
+  // Read validator port from server so goToValidator() uses the right port
+  fetch('/ping').then(function(r){ return r.json(); }).then(function(d){
+    if (d.validator_port) window._validatorPort = d.validator_port;
+  }).catch(function(){});
+});
+
+// ── Mode ──────────────────────────────────────────────────────────────────────
+
+function setMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentMode = btn.getAttribute('data-mode');
+  document.getElementById('modeDesc').textContent = MODE_DESCS[currentMode] || '';
+
+  var crPanel     = document.getElementById('crPanel');
+  var catSec      = document.getElementById('catSection');
+  var pickerPanel = document.getElementById('icdPickerPanel');
+
+  crPanel.style.display     = (currentMode === 'cr') ? 'block' : 'none';
+  // Show ICD picker for Existing Project and Change Request
+  var needPicker = (currentMode === 'existing' || currentMode === 'cr');
+  pickerPanel.style.display = needPicker ? 'block' : 'none';
+  if (needPicker && _icdFiles.length === 0) loadIcdFiles();
+
+  if (currentMode === 'edge') {
+    document.querySelectorAll('.cat-checkbox').forEach(function(cb){
+      cb.checked  = _edgeCats.indexOf(cb.value) !== -1;
+      cb.disabled = true;
+    });
+    catSec.style.opacity       = '0.65';
+    catSec.style.pointerEvents = 'none';
+  } else {
+    document.querySelectorAll('.cat-checkbox').forEach(function(cb){
+      cb.disabled = false;
+    });
+    catSec.style.opacity       = '';
+    catSec.style.pointerEvents = '';
+    if (currentMode === 'new' || currentMode === 'existing') selectAll();
+  }
+}
+
+// ── ICD file picker ───────────────────────────────────────────────────────────
+
+async function loadIcdFiles() {
+  document.getElementById('icdFileList').innerHTML =
+    '<span style="color:#9ca3af;font-size:.82rem;">Loading...</span>';
+  try {
+    var r = await fetch('/list-icd-files');
+    var d = await r.json();
+    if (!r.ok) { document.getElementById('icdFileList').innerHTML =
+      '<span style="color:#b91c1c;font-size:.82rem;">'+esc(d.error||'Failed to load')+'</span>'; return; }
+    _icdFiles      = d.files      || [];
+    _sourceIcdInfo = d.source_icd || null;
+    renderIcdPicker();
+  } catch(e) {
+    document.getElementById('icdFileList').innerHTML =
+      '<span style="color:#b91c1c;font-size:.82rem;">Error: '+esc(e.message)+'</span>';
+  }
+}
+
+async function refreshIcdList() {
+  _icdFiles = [];
+  await loadIcdFiles();
+}
+
+function renderIcdPicker() {
+  // Source banner
+  var banner = document.getElementById('sourceIcdBanner');
+  if (_sourceIcdInfo) {
+    banner.style.display = '';
+    banner.innerHTML = '&#128194; Existing test cases: <b>' + esc(_sourceIcdInfo.tc_filename) + '</b>' +
+      ' &mdash; generated from ICD <b>' + esc(_sourceIcdInfo.scrum_id) + '</b> dated ' +
+      '<b>' + esc(_sourceIcdInfo.icd_dthr) + '</b>. ' +
+      'Select the <span style="color:#15803d;font-weight:700;">updated ICD</span> below to compare against.';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  if (!_icdFiles.length) {
+    document.getElementById('icdFileList').innerHTML =
+      '<span style="color:#9ca3af;font-size:.82rem;">No ICD files found in design pod output.</span>';
+    return;
+  }
+
+  // Find the original ICD (matching scrum_id + icd_dthr from source)
+  var origKey = _sourceIcdInfo
+    ? (_sourceIcdInfo.scrum_id + '_' + _sourceIcdInfo.icd_dthr).toLowerCase()
+    : null;
+
+  var rows = _icdFiles.map(function(f, i) {
+    var isSource = origKey && f.filename.toLowerCase().indexOf(origKey) !== -1;
+    var isNewest = !isSource && f.scrum_id === (_sourceIcdInfo && _sourceIcdInfo.scrum_id);
+    var rowClass = isSource ? 'source-row' : '';
+    var newBadge = (isNewest && i === 0) ? '<span class="icd-new-badge">UPDATED</span>' : '';
+    var srcLabel = isSource ? ' <span style="color:#a16207;font-size:.72rem;">(original source)</span>' : '';
+    var dt = f.icd_dthr ? f.icd_dthr.replace('_',' ') + 'h' : '—';
+    return '<tr class="'+rowClass+'" onclick="selectIcdFile(\''+esc(f.filename)+'\', this)">' +
+      '<td><span class="icd-scrum">'+(f.scrum_id||'—')+'</span>'+srcLabel+'</td>' +
+      '<td>'+dt+'</td>' +
+      '<td>'+esc(f.filename)+newBadge+'</td>' +
+      '</tr>';
+  }).join('');
+
+  document.getElementById('icdFileList').innerHTML =
+    '<table class="icd-table">' +
+    '<thead><tr><th>SCRUM ID</th><th>ICD Date/Hour</th><th>Filename</th></tr></thead>' +
+    '<tbody>'+rows+'</tbody></table>';
+
+  // Auto-select: first non-source file of the same SCRUM (i.e., the updated ICD)
+  if (_sourceIcdInfo) {
+    var autoSelect = _icdFiles.find(function(f){
+      return f.scrum_id === _sourceIcdInfo.scrum_id &&
+             f.filename.toLowerCase().indexOf(origKey) === -1;
+    });
+    if (autoSelect) {
+      var firstRow = document.querySelector('#icdFileList tbody tr:not(.source-row)');
+      if (firstRow) selectIcdFile(autoSelect.filename, firstRow);
+    }
+  }
+}
+
+function selectIcdFile(filename, row) {
+  // Deselect all rows
+  document.querySelectorAll('#icdFileList tr').forEach(function(r){ r.classList.remove('selected'); });
+  row.classList.add('selected');
+  _selectedIcdFile = filename;
+}
+
+async function loadSelectedIcd() {
+  if (!_selectedIcdFile) return false;
+  spin(true, 'Loading ICD: ' + _selectedIcdFile + '...');
+  try {
+    var r = await fetch('/read-icd?filename=' + encodeURIComponent(_selectedIcdFile));
+    var d = await r.json();
+    if (!r.ok) { showErr(d.error || 'Failed to load ICD file.'); return false; }
+    document.getElementById('icdText').value          = d.icd || '';
+    document.getElementById('acText').value           = d.ac  || '';
+    document.getElementById('gitFile').textContent    = d.icd_file + '  +  ' + d.ac_file;
+    document.getElementById('gitLabel').style.display = 'block';
+    currentIcdFile = d.icd_file;
+    return true;
+  } finally { spin(false); }
+}
+
+// ── Categories ────────────────────────────────────────────────────────────────
+
+async function loadCategories() {
+  try {
+    var r = await fetch('/categories');
+    var d = await r.json();
+    _allCats  = d.categories       || [];
+    _edgeCats = d.edge_case_categories || [];
+    var grid = document.getElementById('catGrid');
+    grid.innerHTML = _allCats.map(function(cat){
+      return '<label class="cat-cb">' +
+        '<input type="checkbox" class="cat-checkbox" value="'+esc(cat)+'" checked/> ' +
+        esc(cat) + '</label>';
+    }).join('');
+  } catch(e) {
+    document.getElementById('catGrid').innerHTML =
+      '<span style="color:#b91c1c;font-size:.82rem;">Failed to load categories.</span>';
+  }
+}
+
+function selectAll()   { document.querySelectorAll('.cat-checkbox').forEach(function(cb){ cb.checked=true; }); }
+function deselectAll() { document.querySelectorAll('.cat-checkbox').forEach(function(cb){ cb.checked=false; }); }
+
+function getSelectedCategories() {
+  return Array.from(document.querySelectorAll('.cat-checkbox:checked'))
+              .map(function(cb){ return cb.value; });
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+
+async function doGenerate() {
+  hideErr();
+
+  // For Existing Project / CR: if user selected an ICD file in picker but hasn't loaded it yet, load it now
+  if ((currentMode === 'existing' || currentMode === 'cr') && _selectedIcdFile) {
+    var loaded = await loadSelectedIcd();
+    if (!loaded) return;
+  }
+
+  var icd  = document.getElementById('icdText').value.trim();
+  var ac   = document.getElementById('acText').value.trim();
+  if (!icd) { showErr('Please paste the ICD document or select one from the picker above.'); return; }
+  if (!ac)  { showErr('Please paste the Acceptance Criteria.'); return; }
+
+  var cats = getSelectedCategories();
+  if (!cats.length) { showErr('Select at least one validation category.'); return; }
+
+  // Change Request: validate changed columns
+  if (currentMode === 'cr') {
+    var crRaw = document.getElementById('crCols').value.trim();
+    if (!crRaw) { showErr('Enter the changed column names for Change Request mode.'); return; }
+  }
+
+  var url  = '/generate';
+  var body = { icd: icd, ac: ac, icd_filename: currentIcdFile,
+               categories: cats, mode: currentMode };
+
+  if (currentMode === 'cr') {
+    body.changed_columns = document.getElementById('crCols').value
+      .split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    body.change_reason = document.getElementById('crReason').value.trim();
+    url = '/generate-cr';
+  }
+
+  spin(true, modeSpinMsg(currentMode));
+  try {
+    var r    = await fetch(url, { method:'POST',
+                headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    var text = await r.text();
+    var d;
+    try { d = JSON.parse(text); }
+    catch(e) { showErr('Bad response: ' + text.substring(0,200)); return; }
+    if (!r.ok) { showErr(d.error || 'Generation failed.'); return; }
+
+    // Normalise response shape across modes
+    allNew = [];
+    if (currentMode === 'cr') {
+      all    = d.cases     || [];
+      allNew = d.new_cases || [];
+      // Default to new-only view in CR mode so user sees only what was generated
+      showNewOnly = allNew.length > 0;
+    } else if (currentMode === 'existing') {
+      all    = d.cases     || [];
+      allNew = d.new_cases || [];
+      showNewOnly = false;
+    } else {
+      all         = d.test_cases || d.cases || [];
+      showNewOnly = false;
+    }
+
+    if (!all.length) { showErr('No test cases returned.'); return; }
+
+    var display = (showNewOnly && allNew.length) ? allNew : all;
+    renderStats(display);
+    renderTable(display);
+    buildFilters(display);
+
+    // Show/update the New Only toggle button
+    var btn = document.getElementById('newOnlyBtn');
+    if ((currentMode === 'cr' || currentMode === 'existing') && allNew.length) {
+      btn.style.display  = 'inline-block';
+      btn.textContent    = showNewOnly
+        ? '\u270E Showing New TCs Only (' + allNew.length + ') — click for All (' + all.length + ')'
+        : '\u270E Show New TCs Only (' + allNew.length + ')';
+    } else {
+      btn.style.display  = 'none';
+    }
+
+    renderNote(d, currentMode, cats);
+    // Store csv_path so saveToGit() can reference the exact file
+    window._lastCsvPath = d.csv_path || '';
+    // Reset the Save to Git button for the new result
+    var sgBtn = document.getElementById('saveGitBtn');
+    sgBtn.disabled = false;
+    sgBtn.textContent = '\uD83D\uDCBE Save to Git';
+    sgBtn.style.background = '#4f46e5';
+    sgBtn.style.borderColor = '#4f46e5';
+    document.getElementById('saveGitStatus').textContent = '';
+    document.getElementById('inputCard').style.display = 'none';
+    document.getElementById('resWrap').style.display   = 'block';
+  } catch(e) { showErr('Error: ' + e.message); }
+  finally { spin(false); }
+}
+
+function modeSpinMsg(mode) {
+  var m = {
+    'new':      'Generating test cases with Claude AI...',
+    'existing': 'Detecting new columns and generating incremental test cases...',
+    'cr':       'Generating Change Request test cases...',
+    'edge':     'Generating edge-case test cases...',
+  };
+  return m[mode] || 'Generating...';
+}
+
+async function doRepurpose() {
+  hideErr();
+  spin(true, 'Loading existing test cases...');
+  try {
+    var r = await fetch('/repurpose');
+    var d = await r.json();
+    if (!r.ok) { showErr(d.error || 'Failed to load existing test cases.'); return; }
+    all = d.test_cases || [];
+    if (!all.length) { showErr('No test cases found.'); return; }
+    renderStats(all); renderTable(all); buildFilters(all);
+    document.getElementById('csvNote').innerHTML =
+      '<b>&#9851; Repurposed ' + all.length + ' existing test cases</b>' +
+      '<span class="badge-reuse">No LLM call</span>. ' +
+      'Pass to the <b>Result Validator Agent</b> to run BQ validation.';
+    document.getElementById('inputCard').style.display = 'none';
+    document.getElementById('resWrap').style.display   = 'block';
+  } catch(e) { showErr('Error: ' + e.message); }
+  finally { spin(false); }
+}
+
+async function checkExisting() {
+  try {
+    var r = await fetch('/check-existing');
+    var d = await r.json();
+    if (d.exists && d.files && d.files.length) {
+      var latest = d.files[0];
+      document.getElementById('reuseBanner').style.display = 'block';
+      document.getElementById('reuseBtn').style.display    = 'inline-block';
+      document.getElementById('reuseFile').textContent     = latest.filename;
+      document.getElementById('reuseCount').textContent    = latest.row_count;
+    }
+  } catch(e) {}
+}
+
+async function loadFromGit() {
+  spin(true, 'Pulling latest from Git...');
+  try {
+    var r = await fetch('/read-latest');
+    var d = await r.json();
+    if (!r.ok) { showErr(d.error || 'Failed to load.'); return; }
+    document.getElementById('icdText').value           = d.icd  || '';
+    document.getElementById('acText').value            = d.ac   || '';
+    document.getElementById('gitFile').textContent     = (d.icd_file||'') + '  +  ' + (d.ac_file||'');
+    document.getElementById('gitLabel').style.display  = 'block';
+    currentIcdFile = d.icd_file || '';
+  } catch(e) { showErr('Git error: ' + e.message); }
+  finally { spin(false); }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+function renderStats(cases) {
+  var counts = {};
+  cases.forEach(function(c){ var k=c.category||'Other'; counts[k]=(counts[k]||0)+1; });
+  var total = cases.length;
+  var html  = '<div class="stat s-tot"><div class="n">'+total+'</div><div class="l">Total</div></div>';
+  // Dynamic stat per category
+  var colors = [
+    '#dbeafe','#fef9c3','#fce7f3','#e0f2fe','#f0fdf4',
+    '#fff7ed','#faf5ff','#ecfdf5','#fee2e2','#dcfce7','#ffedd5','#ede9fe'
+  ];
+  var textcols = [
+    '#1d4ed8','#a16207','#9d174d','#0369a1','#15803d',
+    '#c2410c','#7e22ce','#065f46','#b91c1c','#15803d','#c2410c','#6d28d9'
+  ];
+  Object.keys(counts).sort().forEach(function(cat, i){
+    var bg  = colors[i % colors.length];
+    var clr = textcols[i % textcols.length];
+    html += '<div class="stat" style="background:'+bg+';color:'+clr+';">'+
+            '<div class="n">'+counts[cat]+'</div>'+
+            '<div class="l">'+esc(cat.replace(' Validation','').replace(' Values',''))+'</div></div>';
+  });
+  document.getElementById('statsRow').innerHTML = html;
+  // Simple progress bar
+  var nonAir = cases.filter(function(c){ return (c.category||'').toLowerCase() !== 'airflow job'; }).length;
+  var pct    = total ? Math.round(nonAir/total*100) : 0;
+  document.getElementById('progBar').style.width    = pct + '%';
+  document.getElementById('progLabel').textContent  = total + ' test cases across ' +
+    Object.keys(counts).length + ' categories';
+}
+
+// ── Filter bar ────────────────────────────────────────────────────────────────
+
+function buildFilters(cases) {
+  var cats = ['ALL'];
+  cases.forEach(function(c){ if(cats.indexOf(c.category)===-1) cats.push(c.category); });
+  document.getElementById('filterRow').innerHTML = cats.map(function(cat){
+    return '<button class="filt'+(cat==='ALL'?' on':'')+'" data-c="'+esc(cat)+'" onclick="filt(this)">'+
+           esc(cat==='ALL'?'All':cat)+'</button>';
+  }).join('');
+}
+
+function filt(btn) {
+  document.querySelectorAll('.filt').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  var c = btn.getAttribute('data-c');
+  var filtered = (c==='ALL') ? all : all.filter(function(t){ return t.category===c; });
+  renderTable(filtered);
+  if (dtOpen) renderDetailTable(filtered);
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+
+function renderTable(cases) {
+  document.getElementById('tbody').innerHTML = cases.map(function(tc){
+    var q  = (tc.query||'').trim();
+    var qc = q ? '<code>'+esc(q)+'</code>' : '<span style="color:#9ca3af;font-size:.77rem;">N/A</span>';
+    var ac = (tc.linked_ac||'');
+    var acBadge = ac.indexOf('[REGRESSION]') !== -1
+      ? '<span class="badge b-reg">'+esc(ac)+'</span>'
+      : '<span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;">'+esc(ac)+'</span>';
+    return '<tr data-c="'+esc(tc.category||'')+'">' +
+      '<td><b>'+esc(tc.tc_id)+'</b></td>' +
+      '<td>'+catB(tc.category)+'</td>' +
+      '<td><span style="font-family:monospace;font-size:.78rem;background:#f1f5f9;padding:2px 5px;border-radius:4px;">'+esc(tc.column||'ALL')+'</span></td>' +
+      '<td><b>'+esc(tc.test_name)+'</b></td>' +
+      '<td>'+esc(tc.description)+'</td>' +
+      '<td>'+qc+'</td>' +
+      '<td>'+esc(tc.expected_result)+'</td>' +
+      '<td>'+pB(tc.priority)+'</td>' +
+      '<td>'+acBadge+'</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function renderDetailTable(cases) {
+  document.getElementById('tbody2').innerHTML = cases.map(function(tc){
+    var sh = (tc.sql_hint||'').trim();
+    var shc = sh ? '<code>'+esc(sh)+'</code>' : '<span style="color:#9ca3af;">—</span>';
+    return '<tr>' +
+      '<td><b>'+esc(tc.tc_id)+'</b></td>' +
+      '<td>'+catB(tc.category)+'</td>' +
+      '<td><span style="font-family:monospace;font-size:.78rem;background:#f1f5f9;padding:2px 5px;border-radius:4px;">'+esc(tc.column||'ALL')+'</span></td>' +
+      '<td class="detail-cell">'+esc(tc.precondition||'—')+'</td>' +
+      '<td><code style="max-width:130px;">'+esc(tc.input_data||'—')+'</code></td>' +
+      '<td class="detail-cell">'+esc(tc.steps||'—')+'</td>' +
+      '<td>'+shc+'</td>' +
+      '</tr>';
+  }).join('');
+}
+
+// ── Note banner ───────────────────────────────────────────────────────────────
+
+function renderNote(d, mode, cats) {
+  var note = '';
+  if (mode === 'new') {
+    note = '<b>&#10003; ' + all.length + ' test cases generated</b> across ' +
+           cats.length + ' categories. ' +
+           'Download the CSV and pass it to the <b>Result Validator Agent</b>.';
+  } else if (mode === 'existing') {
+    if (d.source === 'no_new_columns') {
+      note = '<b>&#10003; No new columns detected.</b> Showing all ' + all.length + ' existing test cases.';
+    } else if (d.source === 'full') {
+      note = '<b>&#9889; ' + all.length + ' test cases generated</b> (no prior test cases — full generation ran).';
+    } else {
+      var nc = (d.new_columns||[]).length;
+      var nn = (d.new_cases||[]).length;
+      note = '<b>&#10133; Incremental complete.</b> Detected <b>' + nc + ' new column' + (nc===1?'':'s') +
+             '</b>: <span style="font-family:monospace;">' + esc((d.new_columns||[]).join(', ')) + '</span>. ' +
+             'Generated <b>' + nn + ' new TC' + (nn===1?'':'s') + '</b>' +
+             '<span class="badge-new">+' + nn + ' new</span> — merged with ' +
+             (all.length - nn) + ' existing = <b>' + all.length + ' total</b>.';
+    }
+  } else if (mode === 'cr') {
+    var nr = (d.regression_cases||[]).length;
+    var nn = (d.new_cases||[]).length;
+    note = '<b>&#9998; Change Request complete</b><span class="badge-cr">CR</span> &mdash; ' +
+           '<b>' + nn + ' new TC' + (nn===1?'':'s') + '</b> generated for: ' +
+           '<span style="font-family:monospace;">' + esc((d.changed_columns||[]).join(', ')) + '</span>. ' +
+           (nr ? '<b>' + nr + ' existing TC' + (nr===1?'':'s') + '</b> flagged as <span class="badge b-reg">[REGRESSION]</span>.' : '');
+  } else if (mode === 'edge') {
+    note = '<b>&#128312; Edge Cases</b><span class="badge-edge">Edge</span> &mdash; ' +
+           '<b>' + all.length + ' test cases</b> generated for: ' +
+           esc((d.categories_used||[]).join(', ')) + '.';
+  }
+  document.getElementById('csvNote').innerHTML = note;
+}
+
+// ── Badges ────────────────────────────────────────────────────────────────────
+
+function catB(c) {
+  var m = {
+    'Schema Validation':'b-schema', 'Null/Empty':'b-null',
+    'Boundary Values':'b-boundary', 'Format/Pattern':'b-format',
+    'Length/Size':'b-length',       'Duplicates':'b-dupes',
+    'Special Characters':'b-special','Enumeration':'b-enum',
+    'PII':'b-pii',                  'Data Quality':'b-dq',
+    'Partition Validation':'b-part','Airflow Job':'b-air',
+    // Legacy
+    'SCHEMA':'b-schema','DATA QUALITY':'b-dq','PARTITION':'b-part','AIRFLOW JOB':'b-air',
+  };
+  return '<span class="badge '+(m[c]||'b-schema')+'">'+esc(c)+'</span>';
+}
+
+function pB(p) {
+  var v = (p||'').toLowerCase();
+  if (v==='high')   return '<span class="badge b-hi">High</span>';
+  if (v==='medium') return '<span class="badge b-md">Medium</span>';
+  return '<span class="badge b-lo">Low</span>';
+}
+
+function esc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+
+function toggleDetail() {
+  dtOpen = !dtOpen;
+  document.getElementById('dtSec').style.display = dtOpen ? '' : 'none';
+  document.getElementById('dtBtn').textContent   = dtOpen ? 'Hide Detail' : 'Show Detail';
+  if (dtOpen) renderDetailTable(all);
+}
+
+function toggleNewOnly() {
+  showNewOnly = !showNewOnly;
+  var display = (showNewOnly && allNew.length) ? allNew : all;
+  renderStats(display);
+  renderTable(display);
+  buildFilters(display);
+  var btn = document.getElementById('newOnlyBtn');
+  btn.textContent = showNewOnly
+    ? '\u270E Showing New TCs Only (' + allNew.length + ') \u2014 click for All (' + all.length + ')'
+    : '\u270E Show New TCs Only (' + allNew.length + ')';
+  if (dtOpen) renderDetailTable(display);
+}
+
+async function saveToGit() {
+  var btn    = document.getElementById('saveGitBtn');
+  var status = document.getElementById('saveGitStatus');
+  btn.disabled  = true;
+  btn.textContent = '⏳ Saving…';
+  status.textContent = '';
+  status.style.color = '';
+  try {
+    var body = {};
+    if (window._lastCsvPath) {
+      // Send just the filename so the server can resolve the exact file
+      body.filename = window._lastCsvPath.split(/[\\/]/).pop();
+    }
+    var r = await fetch('/save-to-git', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    var text = await r.text();
+    var d;
+    try { d = JSON.parse(text); }
+    catch(_) {
+      // Server returned non-JSON (HTML error page) — show HTTP status + first 200 chars
+      btn.disabled = false;
+      btn.textContent = '⚠ Retry Save';
+      status.textContent = 'Server error (HTTP ' + r.status + '): ' + text.replace(/<[^>]*>/g,'').trim().slice(0,200);
+      status.style.color = '#dc2626';
+      return;
+    }
+    if (d.ok) {
+      btn.textContent    = '✔ Saved to Git';
+      btn.style.background = '#16a34a';
+      btn.style.borderColor = '#16a34a';
+      status.textContent = d.message;
+      status.style.color = '#16a34a';
+    } else {
+      btn.disabled  = false;
+      btn.textContent = '⚠ Retry Save';
+      status.textContent = d.message;
+      status.style.color = '#dc2626';
+    }
+  } catch(e) {
+    btn.disabled  = false;
+    btn.textContent = '⚠ Retry Save';
+    status.textContent = 'Fetch error: ' + e.message;
+    status.style.color = '#dc2626';
+  }
+}
+
+async function generateSynthetic() {
+  var btn    = document.getElementById('synthBtn');
+  var status = document.getElementById('synthStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+  status.textContent = '';
+  status.style.color = '';
+  try {
+    var body = {};
+    if (currentIcdFile) {
+      body.icd_filename = currentIcdFile;
+    }
+    var r    = await fetch('/generate-synthetic', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    var text = await r.text();
+    var d;
+    try { d = JSON.parse(text); }
+    catch(_) {
+      btn.disabled = false;
+      btn.textContent = '⚠ Retry';
+      status.textContent = 'Server error (HTTP ' + r.status + '): ' + text.replace(/<[^>]*>/g,'').trim().slice(0,200);
+      status.style.color = '#dc2626';
+      return;
+    }
+    if (d.ok) {
+      btn.textContent = '✔ Done';
+      btn.style.background = '#16a34a';
+      btn.style.borderColor = '#16a34a';
+      status.textContent = d.message;
+      status.style.color = '#16a34a';
+      // Enable the Go to Validator button
+      var goBtn = document.getElementById('goValidatorSynthBtn');
+      goBtn.disabled = false;
+      goBtn.style.opacity = '1';
+      goBtn.style.cursor = 'pointer';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '⚠ Retry';
+      status.textContent = d.message;
+      status.style.color = '#b45309';
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '⚠ Retry';
+    status.textContent = 'Fetch error: ' + e.message;
+    status.style.color = '#dc2626';
+  }
+}
+
+// ── Proceed to Validation ─────────────────────────────────────────────────────
+
+function setValidationMode(mode) {
+  document.getElementById('optSrcDb').classList.toggle('active', mode === 'source_db');
+  document.getElementById('optSynth').classList.toggle('active', mode === 'synthetic');
+  document.getElementById('srcDbPanel').style.display  = mode === 'source_db' ? 'block' : 'none';
+  document.getElementById('synthPanel').style.display  = mode === 'synthetic'  ? 'block' : 'none';
+  if (mode === 'source_db') loadDbConfigInfo();
+}
+
+// Load config info into the Source DB panel info box
+async function loadDbConfigInfo() {
+  try {
+    var r = await fetch('/source-db-config');
+    var d = await r.json();
+    var box = document.getElementById('dbConfigInfo');
+    if (d.ok && d.config && d.config.host) {
+      var c = d.config;
+      box.innerHTML = '<b>' + (c.db_type || 'mysql').toUpperCase() + '</b> &mdash; '
+        + (c.user || c.username || '') + '@' + c.host + ':' + (c.port || 3306)
+        + ' / <b>' + (c.database || '') + '</b>';
+      box.style.color = '#1e40af';
+      box.style.borderColor = '#93c5fd';
+      box.style.background = '#eff6ff';
+    } else {
+      box.textContent = 'No source DB configured in db_config.json.';
+      box.style.color = '#b91c1c';
+    }
+  } catch(_) {}
+}
+
+async function testDbConn() {
+  var btn    = document.getElementById('testConnBtn');
+  var status = document.getElementById('dbConnStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Testing…';
+  status.textContent = '';
+  status.style.color = '';
+  try {
+    var r = await fetch('/test-source-db', { method: 'POST',
+      headers: {'Content-Type': 'application/json'}, body: '{}' });
+    var text = await r.text();
+    var d;
+    try { d = JSON.parse(text); }
+    catch(_) {
+      btn.disabled = false;
+      btn.textContent = '&#128268; Test Connection';
+      status.textContent = 'Server error (HTTP ' + r.status + ')';
+      status.style.color = '#dc2626';
+      return;
+    }
+    btn.disabled = false;
+    if (d.ok) {
+      btn.textContent = '&#10004; Connected';
+      btn.style.background = '#16a34a';
+      btn.style.borderColor = '#16a34a';
+      status.textContent = d.message;
+      status.style.color = '#16a34a';
+      window._srcDbConfig = d.config || {};
+    } else {
+      btn.textContent = '&#128268; Test Connection';
+      status.textContent = d.message;
+      status.style.color = '#dc2626';
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '&#128268; Test Connection';
+    status.textContent = 'Fetch error: ' + e.message;
+    status.style.color = '#dc2626';
+  }
+}
+
+function goToValidator(mode) {
+  var params = new URLSearchParams({ mode: mode });
+  if (currentIcdFile) params.set('icd_filename', currentIcdFile);
+  if (mode === 'source_db') {
+    var c = window._srcDbConfig || {};
+    if (c.host)     params.set('db_type', c.db_type || 'mysql');
+    if (c.host)     params.set('db_host', c.host);
+    if (c.port)     params.set('db_port', String(c.port));
+    if (c.user)     params.set('db_user', c.user || c.username || '');
+    if (c.database) params.set('db_name', c.database);
+  }
+  var port = window._validatorPort || 9196;
+  window.open('http://' + location.hostname + ':' + port + '/?' + params.toString(), '_blank');
+}
+
+function doReset() {
+  all = []; allNew = []; showNewOnly = false; dtOpen = false;
+  window._lastCsvPath = '';
+  document.getElementById('resWrap').style.display    = 'none';
+  document.getElementById('inputCard').style.display  = '';
+  document.getElementById('dtSec').style.display      = 'none';
+  document.getElementById('dtBtn').textContent        = 'Show Detail';
+  document.getElementById('newOnlyBtn').style.display = 'none';
+  var sgBtn = document.getElementById('saveGitBtn');
+  sgBtn.disabled = false;
+  sgBtn.textContent = '\uD83D\uDCBE Save to Git';
+  sgBtn.style.background = '#4f46e5';
+  sgBtn.style.borderColor = '#4f46e5';
+  document.getElementById('saveGitStatus').textContent = '';
+  // Reset synthetic panel
+  var synBtn = document.getElementById('synthBtn');
+  synBtn.disabled = false;
+  synBtn.textContent = '\u2699 Generate Synthetic Data';
+  synBtn.style.background = '#0891b2';
+  synBtn.style.borderColor = '#0891b2';
+  document.getElementById('synthStatus').textContent = '';
+  // Reset Go to Validator (synthetic)
+  var goSynBtn = document.getElementById('goValidatorSynthBtn');
+  goSynBtn.disabled = true;
+  goSynBtn.style.opacity = '.4';
+  goSynBtn.style.cursor = 'not-allowed';
+  // Reset DB connection status
+  window._srcDbConfig = {};
+  document.getElementById('dbConnStatus').textContent = '';
+  var tcBtn = document.getElementById('testConnBtn');
+  tcBtn.disabled = false;
+  tcBtn.textContent = '\uD83D\uDD0C Test Connection';
+  tcBtn.style.background = '#0891b2';
+  tcBtn.style.borderColor = '#0891b2';
+  // Reset to Source DB mode
+  setValidationMode('source_db');
+  document.getElementById('tbody').innerHTML           = '';
+  document.getElementById('tbody2').innerHTML          = '';
+}
+
+function spin(on, msg) {
+  document.getElementById('ov').classList.toggle('on', on);
+  if (msg) document.getElementById('ovMsg').textContent = msg;
+}
+function showErr(m){ var e=document.getElementById('errBox'); e.textContent=m; e.style.display='block'; }
+function hideErr(){ document.getElementById('errBox').style.display='none'; }
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+    "bq_project"       : "project_name",
+    "bq_dataset"       : "dataset_name",
+    "num_records"      : 500,
+    "date_window_days" : 15,
+    "output_format"    : "bigquery_insert"
+}

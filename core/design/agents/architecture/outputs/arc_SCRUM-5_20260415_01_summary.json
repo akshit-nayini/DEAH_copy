@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "Customer360",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Dataflow (Serverless Beam ETL)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud SQL Auth Proxy + Dataflow JDBC connector",
+    "processing": "Dataflow (Apache Beam SDK 2.x)",
+    "storage": "BigQuery + GCS",
+    "orchestration": "Cloud Composer 2 (Airflow 2.x)",
+    "monitoring": "Cloud Monitoring + Cloud Logging",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer DAG triggers a Dataflow Flex Template job on an hourly cron schedule; Dataflow reads the MySQL EMPLOYEES table via JDBC over Cloud SQL Auth Proxy sidecar attached to Dataflow workers",
+    "2. Processing: Dataflow (Apache Beam) applies schema mapping, type casting, and null handling as in-pipeline transforms; writes directly to BigQuery via the native BigQuery IO connector using WRITE_TRUNCATE semantics",
+    "3. Storage: GCS bucket used exclusively for Dataflow temporary and staging artefacts; final data persists in BigQuery dataset customer360 with date-partitioned tables for query efficiency",
+    "4. Consumption: BigQuery tables exposed to analytics workloads via authorised views; downstream BI tools (Looker, Looker Studio) or dbt transformation models query directly against BigQuery"
+  ],
+  "key_constraints": [
+    "technology.preferred_tools[Airflow Composer]",
+    "data_requirements.frequency[hourly]",
+    "technology.stack[GCP] aligned with GCP defaults (BigQuery/GCS for storage)",
+    "technology.cloud_or_onprem[Cloud] + technology.stack[GCP]",
+    "technology.environment[Dev] + constraints.budget[null \u2014 no budget ceiling specified]"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Connectivity",
+      "mitigation": "Configure Cloud SQL Auth Proxy as a Dataflow pipeline launch option using the --cloud-sql-instances flag; validate end-to-end TCP connectivity from a Dataflow Flex Template test job in Dev before committing to implementation; document VPC peering or Private Service Access requirements if Auth Proxy is not viable"
+    },
+    {
+      "risk": "Security",
+      "mitigation": "Immediately store credentials in Secret Manager with IAM-scoped service account access; conduct a data classification exercise for the EMPLOYEES table before any data lands in BigQuery; apply BigQuery column-level security or dynamic data masking to PII fields prior to any consumer access beyond the pipeline service account"
+    },
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Implement a pre-flight schema comparison step in the Composer DAG that compares live MySQL INFORMATION_SCHEMA against the last-known schema snapshot stored in GCS; alert and halt the pipeline on schema delta before processing; use BigQuery schema auto-detection with NULLABLE mode as a defensive fallback"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.75/10 \u2014 Cost 7, Scalability 9, Complexity 7, Latency 8, Operability 8. Trade-offs accepted: Teams must invest in Apache Beam SDK skills. Cloud SQL Auth Proxy configuration adds initial setup effort that is one-time and well-documented. The absence of a native DQ framework must be mitigated by adding lightweight schema validation Beam assertions before the pipeline is promoted beyond Dev.",
+  "open_blockers": [
+    "Is the MySQL instance at 34.70.79.163 hosted on Cloud SQL (the instance_connection_name verizon-data:us-central1:mysql-druid-metadatastore implies yes) or on-premises? This determines whether Cloud SQL Auth Proxy or VPC peering is the correct and sufficient connectivity approach for Dataflow workers.",
+    "Is ingestion expected to be full-load (replacing all rows each run) or incremental (watermark-based delta or CDC)? The current design assumes full WRITE_TRUNCATE; an incremental design requires identifying a reliable high-watermark column on the EMPLOYEES table or introducing a CDC tool such as Debezium.",
+    "What is the target BigQuery project ID, dataset name, and table naming convention that the Customer360 data platform team has standardised on?"
+  ],
+  "ticket_id": "SCRUM-5"
+}

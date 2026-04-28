@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "mysql to bigquery data ingestion pipeline",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Run Jobs + BigQuery Native MERGE (Serverless Batch)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Google Cloud Run Jobs (Python 3.11 + Cloud SQL Python Connector v1.x with IAM auth)",
+    "processing": "Google BigQuery Native (Load Job + CALL sp_mysqltobq_load MERGE stored procedure) + Python data quality module in Cloud Run Job",
+    "storage": "Google BigQuery (verizon_data_dea, date-partitioned + clustered, partition_expiration_days=60) + Google Cloud Storage (Parquet staging with 7-day lifecycle)",
+    "orchestration": "Google Cloud Composer 2 (Apache Airflow 2.7+) with historical load gating ExternalTaskSensor, per-table task groups, and audit log write tasks",
+    "monitoring": "Google Cloud Monitoring + Cloud Logging + BigQuery pipeline_audit_log table + Looker Studio stakeholder dashboard",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer 2 DAG triggers Cloud Run Job (Python 3.11 container) via Cloud Run Jobs API for each configured source table; Cloud Run Job connects to MySQL agentichub on instance verizon-data:us-central1:mysql-druid-metadatastore using Cloud SQL Python Connector with IAM service account authentication, eliminating hardcoded credentials and manual Auth Proxy management; full historical load reads all rows in configurable chunked batches of 50000 rows to respect Cloud Run Job memory ceiling; incremental load issues SELECT WHERE updated_date greater than max_watermark fetched from BigQuery pipeline_audit_log table, strictly avoiding full table re-scans; extracted data is written to GCS bucket gs://verizon-data-staging/ as Parquet files partitioned by table_name and load_date",
+    "2. Processing: Pre-load data quality module within Cloud Run Job performs: (1) schema drift check by comparing MySQL INFORMATION_SCHEMA.COLUMNS definitions against BigQuery table schema via BigQuery API; on mismatch, job exits with non-zero code triggering Composer task failure and Cloud Monitoring alert with alert-and-hold policy blocking the load; (2) source row count assertion by issuing MySQL COUNT(*) with same incremental WHERE predicate and recording expected count in audit log; (3) primary key null check on employee_id before writing Parquet. Post-extraction: BigQuery Load Job ingests Parquet from GCS into verizon_data_dea.employees_staging table; sp_mysqltobq_load.sql MERGE stored procedure is invoked via BigQuery Jobs API CALL statement performing ACID-compliant upsert on composite key (employee_id, updated_date) into target table verizon_data_dea.employees; post-MERGE reconciliation asserts target row count delta matches extracted source count within configurable tolerance",
+    "3. Storage: GCS bucket gs://verizon-data-staging/ with 7-day object lifecycle policy for Parquet staging files organized by table_name/load_date/; BigQuery dataset verizon_data_dea in project verizon-data as analytical target with date-partitioned tables using partition_expiration_days=60 enforcing 60-day rolling retention per SLA; clustering on employee_id on target tables to optimize MERGE partition pruning; BigQuery table pipeline_audit_log stores run_id, table_name, load_type (full or incremental), start_time, end_time, source_row_count, extracted_row_count, target_row_count_before, target_row_count_after, validation_status (pass or fail), schema_drift_detected (boolean), and error_message per execution cycle",
+    "4. Consumption: Analytics team queries BigQuery verizon_data_dea.employees and future onboarded tables via BigQuery console, Looker Studio, or connected BI tools using standard SQL; Looker Studio dashboard built on pipeline_audit_log table provides real-time load status, historical success and failure counts, row-level reconciliation metrics, and per-table freshness timestamps without requiring engineering involvement; stakeholder-accessible shared dashboard URL distributed post-go-live; Cloud Logging retains full Cloud Run Job execution logs and Composer task logs for 30 days for debugging and compliance"
+  ],
+  "key_constraints": [
+    "technology.preferred_tools: sp_mysqltobq_load.sql; non_functional.performance: incremental loads must not perform full table re-scans; non_functional.scalability: reliable and scalable to accommodate 1 GB per month growth; constraints.budget: null requiring cost optimization",
+    "functional_requirements[9]: Apply merge key logic using employee_id and updated_date for upsert/merge operations via stored procedure sp_mysqltobq_load.sql",
+    "functional_requirements[3]: Gate incremental loads so they cannot begin until the full historical load has been validated and confirmed complete",
+    "functional_requirements[2]: Use timestamp-based or primary key-based change tracking to identify and load only new or changed records; non_functional.performance: incremental loads must not perform full table re-scans",
+    "functional_requirements[6]: Implement per-load data quality checks covering row count reconciliation, primary key uniqueness, and data type constraint verification; functional_requirements[7]: Maintain audit logs for all load executions capturing execution time, record counts, validation results, and errors"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Implement mandatory pre-load schema comparison step in Cloud Run Job: query MySQL INFORMATION_SCHEMA.COLUMNS and compare against BigQuery table schema fetched via BigQuery Tables API; on any mismatch abort the job with non-zero exit code triggering Composer task failure and Cloud Monitoring alert to on-call channel; enforce alert-and-hold as the default new column strategy (block pipeline, alert engineers for review) with documented runbook for column addition approval and BigQuery schema update procedure"
+    },
+    {
+      "risk": "Incremental Change Tracking Completeness",
+      "mitigation": "Post-load row count reconciliation comparing MySQL COUNT(*) WHERE updated_date within the incremental window against BigQuery delta record count; add primary key range assertion comparing MAX(employee_id) in BigQuery against MySQL; raise Cloud Monitoring alert when delta discrepancy exceeds configurable threshold of 1 percent row count variance; document and enforce MySQL application-layer constraint that updated_date must be set on every INSERT and UPDATE operation"
+    },
+    {
+      "risk": "Network and IAM Connectivity",
+      "mitigation": "Include Cloud SQL connectivity health check as the first Composer DAG task before any extraction begins using a lightweight Cloud Run Job test connection step; validate IAM role bindings and API enablement in Terraform configuration; configure Cloud Monitoring uptime check on Cloud SQL instance; alert on three consecutive connection failures within a 15-minute window"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.90/10 \u2014 Cost 9, Scalability 7, Complexity 8, Latency 7, Operability 8. Trade-offs accepted: Option 3 accepts a scalability score of 7 versus Option 1 score of 9 and Option 2 score of 8. This trade-off is explicitly accepted because: (a) projected 24-month total volume of approximately 29 GB (5 GB initial plus 24 multiplied by 1 GB growth) remains well within Cloud Run Job capacity with chunked extraction at 50000 rows per batch; (b) multi-table parallel execution is achievable via Composer DAG fan-out without any architectural changes to the Cloud Run Job or BigQuery components; (c) if volume trajectory accelerates beyond 100 GB active window or table count exceeds 20 concurrent jobs, migration to Dataflow is a localized swap of the extraction compute layer only, since the BigQuery sink, GCS staging pattern, sp_mysqltobq_load.sql stored procedure, Composer orchestration, and monitoring stack remain entirely unchanged. Additionally, the absence of a managed DQ framework is accepted with the mitigation roadmap of adding Dataplex Data Quality scans as a post-load gate in the next engineering iteration.",
+  "open_blockers": [
+    "Has the complete list of source tables in agentichub beyond the currently identified employees table been finalized post-stakeholder review? Final table count and estimated individual table volumes directly determine Composer DAG fan-out parallelism design and Cloud Run Job concurrency configuration before pipeline infrastructure can be sized.",
+    "Is sp_mysqltobq_load.sql a pre-existing BigQuery stored procedure that will be provided to the engineering team, or does it need to be authored as part of this initiative? If pre-existing, confirmation of the current MERGE predicate columns and whether the composite key (employee_id, updated_date) is already implemented is required before pipeline integration testing.",
+    "What constitutes a passing historical load validation for gate release? Is source-to-target row count equality within zero tolerance sufficient, or is a column-level hash or checksum comparison required for a subset of critical columns? This definition determines gate release criteria and validation runtime."
+  ],
+  "ticket_id": "SCRUM-185"
+}

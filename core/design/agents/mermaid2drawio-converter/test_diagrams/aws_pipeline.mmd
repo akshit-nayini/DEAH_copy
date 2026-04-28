@@ -1,0 +1,9 @@
+flowchart LR
+    S3[S3] --> GLUE[Glue]
+    GLUE --> REDSHIFT[Redshift]
+    REDSHIFT --> ATHENA[Athena]
+    S3 --> LAMBDA[Lambda]
+    LAMBDA --> DYNAMO[DynamoDB]
+    DYNAMO --> API[API Gateway]
+    API --> ECS[ECS]
+    ECS --> CLOUDWATCH[CloudWatch]

@@ -1,0 +1,41 @@
+%% Architecture Flow: mysql to bigquery data ingestion pipeline | GCP | batch
+flowchart TB
+
+    subgraph rec["⭐ Option 3: Cloud Run Jobs + BigQuery Native MERGE (Serverless Batch) — Recommended"]
+        I1["📥 Ingestion<br/>Google Cloud Run Jobs (Python 3.11 + Cloud SQL Python Connector v1.x with IAM auth)"]
+        P1["⚙️ Processing<br/>Google BigQuery Native (Load Job + CALL sp_mysqltobq_load MERGE stored procedure) + Python data quality module in Cloud Run Job"]
+        S1["💾 Storage<br/>Google BigQuery (verizon_data_dea, date-partitioned + clustered, partition_expiration_days=60) + Google Cloud Storage (Parquet staging with 7-day lifecycle)"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Google Cloud Composer 2 (Apache Airflow 2.7+) with historical load gating ExternalTaskSensor, per-table task groups, and audit log write tasks"]
+        Mon1["📋 Monitoring<br/>Google Cloud Monitoring + Cloud Logging + BigQuery pipeline_audit_log table + Looker Studio stakeholder dashboard"]
+        IaC1["🔨 IaC<br/>Terraform"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o1["Option 1: Cloud Composer + Dataflow JDBC Managed Pipeline"]
+        I1["📥 Ingestion<br/>Google Cloud Dataflow with Apache Beam JDBC I/O + Cloud SQL Auth Proxy"]
+        P1["⚙️ Processing<br/>Google Cloud Dataflow (Apache Beam transforms with inline schema validation and dead-letter routing)"]
+        S1["💾 Storage<br/>Google BigQuery (verizon_data_dea, date-partitioned) + Google Cloud Storage (temp and dead-letter)"]
+        C1["📊 Consumption<br/>Consumption"]
+        I1 --> P1 --> S1 --> C1
+    end
+
+    subgraph o2["Option 2: Cloud Composer + Dataproc PySpark Batch Pipeline"]
+        I2["📥 Ingestion<br/>Google Cloud Dataproc (PySpark 3.4 with MySQL JDBC Connector mysql-connector-java 8.x, ephemeral clusters)"]
+        P2["⚙️ Processing<br/>Apache Spark on Cloud Dataproc (PySpark DataFrames with schema validation and drift detection)"]
+        S2["💾 Storage<br/>Google BigQuery (verizon_data_dea, date-partitioned) + Google Cloud Storage (Parquet staging)"]
+        C2["📊 Consumption<br/>Consumption"]
+        I2 --> P2 --> S2 --> C2
+    end
+
+    rec ~~~ o1
+    o1 ~~~ o2
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I1,P1,S1,C1,I2,P2,S2,C2 rejected

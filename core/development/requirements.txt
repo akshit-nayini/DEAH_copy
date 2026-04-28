@@ -1,0 +1,42 @@
+# ── Core (always required) ─────────────────────────────────────────────────────
+pydantic>=2.7
+python-dotenv>=1.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# ── LLM Providers (install the one you need) ───────────────────────────────────
+anthropic>=0.39.0          # Claude (Anthropic)  — default
+# openai>=1.0.0            # GPT-4 (OpenAI)      — uncomment to enable
+# google-generativeai>=0.7 # Gemini (Google)     — uncomment to enable
+
+# ── GCP Cloud Clients (required for deployer agent on GCP) ────────────────────
+# google-cloud-bigquery>=3.0.0   # BigQueryClient
+# google-cloud-storage>=2.0.0    # GCSStorageClient, ComposerClient DAG upload
+# google-auth>=2.0.0             # ADC credential flow for Composer REST API
+# requests>=2.31.0               # Composer trigger REST call
+
+# ── Metadata DB (MySQL — ticket lookup + artifact history) ─────────────────────
+pymysql>=1.1.0            # SQLAlchemy MySQL dialect for metadata DB queries
+
+# ── Dev / Testing ──────────────────────────────────────────────────────────────
+pytest>=8.0
+pytest-asyncio>=0.23
+ruff>=0.4.0
+
+# Auto-added by development agent
+argparse
+apache_beam
+jaydebeapi
+decimal
+socket
+apache-airflow
+
+# Auto-added by development agent
+google-cloud-bigquery
+
+# Auto-added by development agent
+mysql
+googleapiclient
+
+# Auto-added by development agent
+common

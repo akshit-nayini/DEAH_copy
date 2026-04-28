@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Native Airflow Operators + GCS Staging + BigQuery MERGE",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Composer 2 \u2014 MySQLToGCSOperator (apache-airflow-providers-google)",
+    "processing": "BigQuery \u2014 MERGE stored procedure sp_mysqltobq_load.sql + BigQuery SQL assertion tasks via BigQueryInsertJobOperator",
+    "storage": "Google Cloud Storage (staging, 1-day lifecycle) + BigQuery native table verizon_data_dea.employees (60-day partition expiry)",
+    "orchestration": "Cloud Composer 2 (Apache Airflow 2.x)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + BigQuery audit table verizon_data_dea.pipeline_audit_log",
+    "iac": "Terraform (hashicorp/google provider)"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer 2 DAG triggers MySQLToGCSOperator (apache-airflow-providers-google) to perform chunked reads from Cloud SQL MySQL instance verizon-data:us-central1:mysql-druid-metadatastore, database agentichub, table employees; historical load uses configurable page_size (100,000 rows per chunk) to produce partitioned CSV/Avro files written to GCS staging bucket gs://verizon-data-etl-staging/employees/; incremental loads apply WHERE updated_date > last_successful_run watermark with identical chunking strategy; Airflow retry policies with exponential backoff are applied at the operator level",
+    "2. Processing: GCSToBigQueryOperator loads GCS staged files into transient BigQuery staging table verizon_data_dea.employees_staging; BigQuery stored procedure sp_mysqltobq_load.sql executes MERGE on composite key (employee_id, updated_date) from staging into target verizon_data_dea.employees; sequential post-load Airflow tasks execute BigQuery SQL assertions for zero-tolerance row count reconciliation against MySQL source count, primary key uniqueness enforcement, null and datatype constraint validation, and schema drift detection; an audit log record is written to verizon_data_dea.pipeline_audit_log on every execution regardless of outcome",
+    "3. Storage: GCS staging bucket with 1-day lifecycle auto-deletion policy; BigQuery target table verizon_data_dea.employees with 60-day partition expiry enforced via partitionExpirationMs; BigQuery audit table verizon_data_dea.pipeline_audit_log for full execution history; Airflow Variable historical_load_signoff_status used as programmatic sign-off gate blocking incremental DAG activation",
+    "4. Consumption: BigQuery for direct SQL analytics and ad-hoc reporting by the 5gcore programme; Looker Studio dashboards surfacing pipeline_audit_log for stakeholder self-service visibility without engineering assistance; Cloud Logging for immutable audit trail; Cloud Monitoring dashboards for operational pipeline health"
+  ],
+  "key_constraints": [
+    "Use a chunking or batching strategy to handle the estimated 5 GB historical data volume and prevent timeouts and memory failures; include retry logic for failed historical data extractions",
+    "Use stored procedure sp_mysqltobq_load.sql with merge key based on employee_id and updated_date for incremental loads",
+    "Implement ongoing scheduled incremental loads running daily at 2 AM via Cloud Composer",
+    "Block incremental pipeline activation until historical load is fully validated and sign-off is formally documented",
+    "Apply 60-day data retention policy in BigQuery"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "PII Data Exposure",
+      "mitigation": "Enforce least-privilege IAM on the GCS staging bucket (Storage Object Admin scoped to the Composer service account only) and BigQuery dataset (no allUsers or allAuthenticatedUsers bindings); enable VPC Service Controls perimeter around the verizon-data project; evaluate column-level BigQuery security policies or data masking for sensitive PII fields; enforce 1-day GCS lifecycle deletion to minimise PII residency in staging"
+    },
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Implement a mandatory pre-load Airflow task that queries MySQL INFORMATION_SCHEMA.COLUMNS and diffs against the registered BigQuery table schema; any mismatch causes an immediate DAG failure with a detailed alert before any data is written; establish a formal new-column approval workflow requiring schema review and BigQuery schema update before any new column is included in a production load"
+    },
+    {
+      "risk": "Historical Load Sign-Off Gate Bypass",
+      "mitigation": "The incremental DAG's first task is a ShortCircuitOperator reading the Airflow Variable historical_load_signoff_status; unless the value is exactly APPROVED the DAG exits with SKIPPED status for all downstream tasks; write access to this Airflow Variable in the production environment is restricted to authorised personnel only via Airflow RBAC"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.70/10 \u2014 Cost 8, Scalability 7, Complexity 8, Latency 7, Operability 9. Trade-offs accepted: GCS staging introduces an intermediate storage hop adding 2 to 5 minutes of per-execution latency, which is fully acceptable within the overnight 2 AM batch window. Page-based LIMIT/OFFSET chunking carries a performance ceiling beyond very large row counts, but this is acceptable given the 5 GB initial volume and 1 GB/month growth trajectory; chunk size must be validated and tuned during the historical load execution phase.",
+  "open_blockers": [
+    "Is stored procedure sp_mysqltobq_load.sql already authored, tested, and available in a version-controlled repository, or does it need to be designed and implemented as part of this engagement? Its existence is assumed but not confirmed in the provided requirements.",
+    "What is the current column schema of agentichub.employees (column names, data types, nullable flags, approximate row count and average row width in bytes)? This information is required to configure the MySQLToGCSOperator schema parameter, define the BigQuery target table DDL, and establish the row count reconciliation baseline before the historical load begins.",
+    "Does the employee data contain PII fields (e.g. national ID, salary, date of birth, personal contact details) requiring column-level BigQuery security policies, BigQuery data masking rules, or CMEK encryption beyond dataset-level IAM access control? The compliance field is currently null and PII handling scope is unconfirmed."
+  ],
+  "ticket_id": "SCRUM-149"
+}

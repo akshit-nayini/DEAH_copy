@@ -1,0 +1,159 @@
+{
+  "agent": "data_model",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-160",
+  "source_tables": [
+    "employees"
+  ],
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_employees",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "employee_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique employee identifier; primary key and merge key for sp_mysqltobq_load.sql incremental loads"
+        },
+        {
+          "name": "first_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee first name; sourced from varchar(50)"
+        },
+        {
+          "name": "last_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee last name; sourced from varchar(50)"
+        },
+        {
+          "name": "email",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee email address; sourced from varchar(100)"
+        },
+        {
+          "name": "phone_number",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Employee phone number; nullable; sourced from varchar(20)"
+        },
+        {
+          "name": "hire_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Date the employee was hired"
+        },
+        {
+          "name": "job_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Job role code identifier; sourced from varchar(20)"
+        },
+        {
+          "name": "salary",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee salary with two decimal places; sourced from decimal(8,2)"
+        },
+        {
+          "name": "commission_pct",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Commission percentage; nullable; sourced from decimal(4,2)"
+        },
+        {
+          "name": "manager_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referencing FK to employee_id of the managing employee; NULL for top-level employees"
+        },
+        {
+          "name": "department_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Department identifier; nullable; cluster column for department-scoped analytics"
+        },
+        {
+          "name": "status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employment status; low-cardinality cluster column; sourced from varchar(10)"
+        },
+        {
+          "name": "created_date",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp; stored in UTC"
+        },
+        {
+          "name": "updated_date",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Record last update timestamp; DAY partition column; second merge key for incremental loads via sp_mysqltobq_load.sql; NULL rows land in BigQuery __NULL__ partition"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_employees",
+      "from_column": "manager_id",
+      "to_table": "stg_employees",
+      "to_column": "employee_id",
+      "type": "self-referencing"
+    }
+  ],
+  "partitioning": {
+    "stg_employees": {
+      "type": "TIMESTAMP",
+      "column": "updated_date",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_employees": [
+      "employee_id",
+      "department_id",
+      "status"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_employees",
+      "to_table": "stg_employees",
+      "type": "many-to-one",
+      "notes": "Many employees may report to one manager via manager_id \u2192 employee_id self-reference; top-level employees carry NULL manager_id"
+    }
+  ]
+}

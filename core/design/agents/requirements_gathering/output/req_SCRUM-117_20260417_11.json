@@ -1,0 +1,131 @@
+{
+  "source": "jira",
+  "ticket_id": "SCRUM-117",
+  "request_type": "new development",
+  "run_plan": [
+    "data_model",
+    "architecture",
+    "implementation_steps"
+  ],
+  "project_name": "Clickstream Analytics Platform",
+  "objective": "Build a real-time streaming pipeline using Dataflow (Apache Beam) to consume user clickstream events (page views, clicks, session activity) from a Confluent Kafka cluster and write them to BigQuery for live user behaviour dashboards and funnel analysis, with events available within 60 seconds of source publish and no data loss.",
+  "business_context": "User clickstream events are currently published to a Confluent Kafka cluster but are unavailable for analytics. Delivering these events into BigQuery within 60 seconds will power real-time Looker dashboards and funnel analysis, enabling live visibility into user behaviour across page views, clicks, and session activity.",
+  "functional_requirements": [
+    "Consume events in real-time from 3 Confluent Kafka topics (clickstream.page_views, clickstream.user_events, clickstream.sessions) using Dataflow Streaming",
+    "Parse JSON event payloads and map fields to the corresponding BigQuery table schema",
+    "Deduplicate events on event_id within a 10-minute sliding window",
+    "Partition BigQuery target tables by event_timestamp (DATE)",
+    "Route unparseable or schema-invalid events to a dead-letter Kafka topic without interrupting the pipeline",
+    "Log pipeline run results to pipeline_audit.pipeline_run_log"
+  ],
+  "data_requirements": {
+    "source_systems": [
+      "Confluent Kafka"
+    ],
+    "data_types": [
+      "JSON event payloads",
+      "page view events",
+      "click events",
+      "session activity events"
+    ],
+    "volume": "~50 GB/day; ~5,000 events/second peak throughput",
+    "frequency": "real-time streaming"
+  },
+  "technology": {
+    "stack": [
+      "GCP",
+      "Google Cloud Dataflow",
+      "Apache Beam",
+      "Confluent Kafka",
+      "Google BigQuery",
+      "Looker"
+    ],
+    "environment": null,
+    "cloud_or_onprem": "cloud",
+    "preferred_tools": [
+      "Confluent Kafka",
+      "Google Cloud Dataflow",
+      "Apache Beam",
+      "Looker"
+    ]
+  },
+  "non_functional": {
+    "performance": "~5,000 events/second peak; ~50 GB/day data volume",
+    "scalability": "Dataflow job must auto-scale between 2 and 20 workers based on load",
+    "latency": "Events must be visible in BigQuery within 60 seconds of Kafka publish timestamp",
+    "sla": "Zero data loss; event count in Kafka must match BigQuery row count per hour; dead-letter queue must capture all malformed events without pipeline failure"
+  },
+  "security": {
+    "data_sensitivity": null,
+    "access_controls": "Confluent Kafka authentication via SASL/PLAIN API key",
+    "compliance": null
+  },
+  "constraints": {
+    "budget": null,
+    "timeline": null,
+    "technical_limitations": null
+  },
+  "existing_architecture": null,
+  "source_connections": [
+    {
+      "db_type": "kafka",
+      "database": null,
+      "instance_connection_name": null,
+      "host": "pkc-abc12.us-central1.gcp.confluent.cloud",
+      "port": "9092",
+      "username": null,
+      "source_tables": [
+        "clickstream.page_views",
+        "clickstream.user_events",
+        "clickstream.sessions"
+      ]
+    },
+    {
+      "db_type": "bigquery",
+      "database": "verizon_clickstream_deah",
+      "instance_connection_name": null,
+      "host": null,
+      "port": null,
+      "username": null,
+      "source_tables": [
+        "page_views",
+        "user_events",
+        "sessions"
+      ]
+    }
+  ],
+  "assumptions": [
+    "BigQuery target project is verizon-data as stated in connection details",
+    "Audit log table pipeline_audit.pipeline_run_log is expected to reside within the verizon-data BigQuery project",
+    "SASL/PLAIN API key credentials for Confluent Kafka will be securely injected at deployment time and are not embedded in pipeline code",
+    "Dead-letter destination is a separate Kafka topic (not a BigQuery table) based on the term dead-letter topic used in requirements"
+  ],
+  "inferred_assumptions": [
+    "Deployment environment is assumed to be production given the real-time Looker dashboard requirement and zero-data-loss SLA",
+    "Clickstream event data may contain user-identifiable behavioural data, implying potential PII sensitivity not explicitly declared in the ticket"
+  ],
+  "acceptance_criteria": [
+    "End-to-end latency < 60 seconds measured from Kafka publish timestamp to BigQuery insert confirmation",
+    "Zero data loss \u2014 event count in Kafka matches BigQuery row count on a per-hour basis",
+    "Dead-letter topic captures all malformed or schema-invalid events without dropping or stalling the pipeline",
+    "Dataflow job auto-scales between 2 and 20 workers in response to load changes",
+    "event_id is not null and is unique within any 10-minute deduplication window",
+    "event_timestamp falls within \u00b15 minutes of wall clock time at ingestion",
+    "All pipeline run results are logged to pipeline_audit.pipeline_run_log"
+  ],
+  "expected_outputs": [
+    "Real-time Dataflow streaming pipeline consuming from Confluent Kafka (3 topics) and writing to BigQuery",
+    "Populated BigQuery dataset verizon_clickstream_deah (project: verizon-data) with tables page_views, user_events, and sessions, each partitioned by event_timestamp (DATE)",
+    "Dead-letter Kafka topic capturing unparseable and schema-invalid events for downstream inspection",
+    "Deduplication mechanism enforcing event_id uniqueness within a 10-minute window",
+    "Pipeline audit log records written to pipeline_audit.pipeline_run_log for observability",
+    "BigQuery data available to real-time Looker dashboards and funnel analysis workloads"
+  ],
+  "classification": {
+    "ingestion_type": "streaming",
+    "output_type": "pipeline"
+  },
+  "confidence": 0.94,
+  "low_confidence_warning": null,
+  "raw_text": "Ticket: SCRUM-117\nSummary: Build Real-time Clickstream Streaming Pipeline from Kafka to BigQuery \u2014 New Development\nStatus: To Do\nPriority: Medium\nAssignee: Unassigned\nDescription:\nProject Name: Clickstream Analytics Platform Requirement Type: New Development Stakeholder: John Objective User clickstream events (page views, clicks, session activity) are published to a Confluent Kafka cluster but are unavailable for analytics. Build a real-time streaming pipeline using Dataflow (Apache Beam) to consume events from Kafka topics and write them to BigQuery for live user behaviour dashboards and funnel analysis. Expected Outcome: Clickstream events available in BigQuery verizon_clickstream_deah dataset within 60 seconds of source event with no data loss, supporting real-time Looker dashboards. Connections and DB Details Source: Confluent Kafka, Bootstrap Server: pkc-abc12.us-central1.gcp.confluent.cloud:9092, Topics: clickstream.page_views, clickstream.user_events, clickstream.sessions, Auth: SASL/PLAIN API key Target: BigQuery project verizon-data, Dataset: verizon_clickstream_deah, Tables: page_views, user_events, sessions Functional Requirements Consume events from 3 Kafka topics in real-time using Dataflow Streaming Parse JSON event payloads and map to BigQuery schema Deduplicate events on event_id within a 10-minute window Partition BigQuery tables by event_timestamp (DATE) Dead-letter topic for unparseable or schema-invalid events Non-Functional Requirements Latency: Events visible in BigQuery within 60 seconds of publish Throughput: ~5,000 events/second peak Data volume: ~50GB/day Acceptance Criteria Success Conditions: End-to-end latency < 60 seconds measured from Kafka publish to BigQuery insert Zero data loss \u2014 event count in Kafka matches BigQuery row count per hour Dead-letter queue captures malformed events without dropping pipeline Dataflow job auto-scales between 2\u201320 workers based on load Validation Rules: event_id must be not null and unique within 10-minute dedup window event_timestamp must be within \u00b15 minutes of wall clock time Results logged to pipeline_audit.pipeline_run_log"
+}

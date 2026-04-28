@@ -1,0 +1,15 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,notes
+MySQL,EMPLOYEES,EMPLOYEE_ID,NUMBER,stg_employees,employee_id,INT64,CAST(EMPLOYEE_ID AS INT64),False,True,"Primary key, used for clustering"
+MySQL,EMPLOYEES,FIRST_NAME,VARCHAR2,stg_employees,first_name,STRING,FIRST_NAME,False,False,Direct mapping
+MySQL,EMPLOYEES,LAST_NAME,VARCHAR2,stg_employees,last_name,STRING,LAST_NAME,False,False,Direct mapping
+MySQL,EMPLOYEES,EMAIL,VARCHAR2,stg_employees,email,STRING,EMAIL,False,False,Direct mapping
+MySQL,EMPLOYEES,PHONE_NUMBER,VARCHAR2,stg_employees,phone_number,STRING,PHONE_NUMBER,False,False,"Direct mapping, nullable"
+MySQL,EMPLOYEES,HIRE_DATE,DATE,stg_employees,hire_date,DATE,CAST(HIRE_DATE AS DATE),True,False,Used for date-based partitioning
+MySQL,EMPLOYEES,JOB_ID,VARCHAR2,stg_employees,job_id,STRING,JOB_ID,False,False,Direct mapping
+MySQL,EMPLOYEES,SALARY,NUMBER,stg_employees,salary,NUMERIC,CAST(SALARY AS NUMERIC),False,False,Direct mapping with type cast
+MySQL,EMPLOYEES,COMMISSION_PCT,NUMBER,stg_employees,commission_pct,NUMERIC,CAST(COMMISSION_PCT AS NUMERIC),False,False,"Direct mapping with type cast, nullable"
+MySQL,EMPLOYEES,MANAGER_ID,NUMBER,stg_employees,manager_id,INT64,CAST(MANAGER_ID AS INT64),False,False,"Foreign key reference to employee_id, nullable"
+MySQL,EMPLOYEES,DEPARTMENT_ID,NUMBER,stg_employees,department_id,INT64,CAST(DEPARTMENT_ID AS INT64),False,True,Used for clustering to optimize queries by department
+MySQL,EMPLOYEES,STATUS,VARCHAR2,stg_employees,status,STRING,STATUS,False,False,Direct mapping
+MySQL,EMPLOYEES,CREATED_DATE,TIMESTAMP,stg_employees,created_date,TIMESTAMP,CAST(CREATED_DATE AS TIMESTAMP),False,False,Direct mapping with type cast
+MySQL,EMPLOYEES,UPDATED_DATE,TIMESTAMP,stg_employees,updated_date,TIMESTAMP,CAST(UPDATED_DATE AS TIMESTAMP),False,False,"Direct mapping with type cast, nullable"

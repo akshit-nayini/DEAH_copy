@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Run Chunked Extractor + Cloud Workflows Orchestration + BigQuery Native Load",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Run Jobs (Python, mysql-connector-python, Cloud SQL Auth Proxy serverless connector)",
+    "processing": "Cloud Run Jobs (in-process schema validation + chunked extraction) + BigQuery Scripted SQL (post-load reconciliation and PK uniqueness assertion)",
+    "storage": "GCS (transient chunked NDJSON staging) + BigQuery (target employees table + audit_log)",
+    "orchestration": "Cloud Workflows + Cloud Scheduler",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Scheduler triggers Cloud Workflows on daily cron; Workflows invokes a Cloud Run Job (containerized Python with mysql-connector-python) that connects to Cloud SQL MySQL via Cloud SQL Auth Proxy serverless connector; historical load uses keyset/cursor-based chunking (ORDER BY employee_id with configurable chunk_size, default 100K rows per chunk) to prevent memory failures and timeouts; each chunk written atomically to GCS as newline-delimited JSON files with chunk manifest tracking; per-chunk retry logic applies exponential backoff with 3 attempts before marking chunk as failed and raising alert",
+    "2. Processing: Pre-load step: Cloud Run job reads stored schema manifest from GCS and executes INFORMATION_SCHEMA comparison against live MySQL employees table, asserting field names, data types, NOT NULL constraints, and detecting unexpected new columns before any extraction begins; each extracted chunk validated against schema on read; post-load step: Cloud Workflows invokes BigQuery scripted SQL job to compare SOURCE_COUNT (MySQL COUNT(*) snapshot taken at job start) vs TARGET_COUNT (BigQuery COUNT(*)) and assert equality within tolerance; PK uniqueness enforced via BigQuery EXCEPT DISTINCT query after every load execution; new column detection triggers Cloud Monitoring alert and halts pipeline pending schema policy resolution; all validation outcomes written to BigQuery audit_log table with load_id, chunk_count, source_count, target_count, validation_status, and execution timestamps",
+    "3. Storage: GCS bucket stores chunked NDJSON staging files (auto-deleted after successful BigQuery load job via lifecycle policy); BigQuery verizon_data_dea.employees as primary target with load_date partitioning and 60-day partition expiry enforced natively (WRITE_TRUNCATE for historical full load, WRITE_APPEND followed by MERGE keyed on employee_id for daily incremental); BigQuery audit_log table in verizon_data_dea stores immutable execution metadata for all historical and incremental runs",
+    "4. Consumption: Looker Studio self-service dashboard connected to BigQuery audit_log provides stakeholder Yash independent visibility into load success, row counts, validation status, and failure history without engineering involvement; Cloud Monitoring custom alerting policies fire on Cloud Run Job non-zero exit codes and Cloud Workflows execution failures within configurable SLA window; Cloud Logging structured log sink captures all pipeline steps; BigQuery dataset access provisioned for stakeholder ad-hoc SQL validation queries"
+  ],
+  "key_constraints": [
+    "constraints.technical_limitations + non_functional.performance + constraints.timeline",
+    "functional_requirements[2]: implement chunking or batching strategy to handle 5 GB volume and prevent timeouts and memory failures",
+    "functional_requirements[3]: implement retry logic for failed extraction chunks during the historical load",
+    "functional_requirements[4] + data_requirements.frequency: daily scheduled incremental loads following historical load sign-off",
+    "functional_requirements[5]: block incremental pipeline activation until historical load validation sign-off is formally documented"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Completeness \u2014 Missing Watermark Column",
+      "mitigation": "Confirm watermark column existence and update semantics during sprint 14 schema discovery before pipeline development begins; if absent, implement full-scan with MERGE/UPSERT strategy for all incremental loads and document the performance and cost implications for stakeholder awareness"
+    },
+    {
+      "risk": "Cloud SQL Connectivity",
+      "mitigation": "Execute a Cloud Run connectivity smoke test (SELECT 1 from employees LIMIT 1) as the mandatory first step in the Cloud Workflows historical load workflow, before any chunked extraction begins; fail fast with a Cloud Monitoring alert if the smoke test fails; validate IAM bindings via Terraform plan before deployment"
+    },
+    {
+      "risk": "Historical Load Sign-Off Gate Bypass",
+      "mitigation": "Implement gate as a required Cloud Workflows condition that reads and validates a signed approval JSON object from GCS (containing load_id, approver, timestamp, and a confirmation hash); Cloud Scheduler incremental trigger is created in PAUSED state via Terraform and requires a manual Terraform apply with approval_flag=true to activate; document the gate activation procedure in the operational runbook"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.50/10 \u2014 Cost 8, Scalability 7, Complexity 8, Latency 7, Operability 7. Trade-offs accepted: Accepting lower Scalability score (7 vs 9 for Dataflow) because the 60-day BigQuery partition expiry policy bounds the steady-state employees table to approximately 7 GB regardless of ingestion growth rate, making distributed auto-scaling irrelevant at current and near-term projected volumes. The parallel Cloud Run Jobs array pattern provides a documented migration path if monthly incremental volume unexpectedly exceeds 10 GB before a Dataflow migration is warranted. Accepting Cloud Workflows' simpler DSL over Airflow DAGs because the pipeline dependency graph is strictly linear and does not require complex multi-DAG dependencies, sensor operators, or cross-pipeline coordination that would justify Composer's baseline cost.",
+  "open_blockers": [
+    "Does the MySQL employees table in agentichub have a reliable watermark column (e.g., updated_at, modified_at, last_modified_timestamp) for incremental load filtering? If not, the incremental strategy must switch to full-scan with MERGE/UPSERT, increasing daily extraction cost and duration.",
+    "What is the formal sign-off process for stakeholder Yash's historical load validation \u2014 will approval be recorded in a JIRA ticket, email confirmation, or a pipeline-accessible artifact such as a GCS object or Firestore document that Cloud Workflows can programmatically evaluate?",
+    "Is there a VPC Service Controls perimeter configured on project verizon-data that could restrict Cloud Run serverless connector access to Cloud SQL private IP, requiring additional perimeter rules or access policy exceptions?"
+  ],
+  "ticket_id": "SCRUM-145"
+}

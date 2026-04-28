@@ -1,0 +1,159 @@
+{
+  "agent": "data_model",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-123",
+  "source_tables": [
+    "employees"
+  ],
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_employees",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "employee_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique employee identifier. Sourced from EMPLOYEE_ID decimal(10,0) PK. Zero fractional digits warrant INT64 over NUMERIC."
+        },
+        {
+          "name": "first_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee given name. Sourced from FIRST_NAME varchar(50). BigQuery STRING is unbounded; source length constraint remains at origin."
+        },
+        {
+          "name": "last_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee family name. Sourced from LAST_NAME varchar(50)."
+        },
+        {
+          "name": "email",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Corporate email address. Sourced from EMAIL varchar(100)."
+        },
+        {
+          "name": "phone_number",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Contact phone number. Sourced from PHONE_NUMBER varchar(20). Nullable in source; null-constraint violations must be logged per acceptance criteria."
+        },
+        {
+          "name": "hire_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Date the employee was hired. Sourced from HIRE_DATE date. Used as TIME_UNIT partition column at MONTH granularity to support cohort analytics and partition pruning."
+        },
+        {
+          "name": "job_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Job role code. Sourced from JOB_ID varchar(20). Cluster column (position 2) \u2014 frequent GROUP BY and WHERE target in HR reporting."
+        },
+        {
+          "name": "salary",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee base salary with two decimal places. Sourced from SALARY decimal(8,2). BigQuery NUMERIC (29,9) safely accommodates this precision without rounding loss."
+        },
+        {
+          "name": "commission_pct",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Commission percentage with two decimal places. Sourced from COMMISSION_PCT decimal(4,2). Nullable; null-constraint violations must be logged before load is marked complete."
+        },
+        {
+          "name": "manager_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referential FK to employee_id identifying the employee's direct manager. Sourced from MANAGER_ID decimal(10,0). Nullable for top-level employees with no manager."
+        },
+        {
+          "name": "department_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Department identifier. Sourced from DEPARTMENT_ID decimal(4,0). Zero fractional digits warrant INT64. Cluster column (position 1) \u2014 highest-cardinality analytical dimension in HR queries."
+        },
+        {
+          "name": "status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employment status flag (e.g. ACTIVE, INACTIVE). Sourced from STATUS varchar(10). Low-cardinality; cluster column (position 3) for efficient point-filter queries."
+        },
+        {
+          "name": "created_date",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp. Sourced from CREATED_DATE timestamp. NOT NULL; used as fallback incremental watermark when updated_date is NULL."
+        },
+        {
+          "name": "updated_date",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Record last-modified timestamp. Sourced from UPDATED_DATE timestamp. Primary incremental load watermark column for delta extraction. Null-constraint violations must be logged and reported before each incremental load is marked complete."
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_employees",
+      "from_column": "manager_id",
+      "to_table": "stg_employees",
+      "to_column": "employee_id",
+      "type": "self-referential"
+    }
+  ],
+  "partitioning": {
+    "stg_employees": {
+      "type": "TIME_UNIT",
+      "column": "hire_date",
+      "granularity": "MONTH"
+    }
+  },
+  "clustering": {
+    "stg_employees": [
+      "department_id",
+      "job_id",
+      "status"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_employees",
+      "to_table": "stg_employees",
+      "type": "many-to-one",
+      "notes": "Many employees can share the same manager_id, which references employee_id within the same table forming a supervisory hierarchy. Top-level employees (no manager) carry NULL in manager_id."
+    }
+  ]
+}

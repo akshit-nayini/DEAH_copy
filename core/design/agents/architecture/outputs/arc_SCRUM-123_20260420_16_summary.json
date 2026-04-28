@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Cloud Run Jobs (Orchestrated Serverless ETL)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud SQL Auth Proxy sidecar + pymysql in Cloud Run Jobs container",
+    "processing": "Cloud Run Jobs (Python 3.11, google-cloud-bigquery SDK, BigQuery Storage Write API)",
+    "storage": "BigQuery + Google Cloud Storage + Artifact Registry",
+    "orchestration": "Cloud Composer 2 (Apache Airflow 2.x)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio",
+    "iac": "Terraform (hashicorp/google provider)"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer 2 triggers parameterized Cloud Run Jobs via GCPCloudRunJobExecuteAsyncOperator on defined DAG schedules; containerized Python job connects to Cloud SQL MySQL (agentichub.employees) via Cloud SQL Auth Proxy sidecar using pymysql with server-side cursor and paginated chunk extraction; full load issues a paginated SELECT across the full table; incremental load queries WHERE updated_at > last_watermark, with watermark value read from and written to a BigQuery control_watermarks table at job start and on successful completion",
+    "2. Processing: Cloud Run Job container sequentially executes: (1) pre-load schema compatibility check comparing MySQL information_schema column definitions against BigQuery table schema API response, flagging type mismatches, new columns, and null constraint conflicts; (2) paginated data extraction with explicit Python type mapping to BigQuery field types; (3) BigQuery Storage Write API batch write using COMMITTED mode for atomicity; (4) post-load row count comparison between MySQL COUNT(*) and BigQuery SELECT COUNT(*) for the load window; (5) PK uniqueness enforcement via BigQuery MERGE DML (DELETE duplicate keys then keep latest); (6) null constraint violation report logged as structured JSON to Cloud Logging; (7) structured audit record written to BigQuery audit_log table with status, row counts, schema diff, duration, and watermark values",
+    "3. Storage: BigQuery verizon_data_deah dataset; employees table date-partitioned by load_date, clustered by employee primary key; control_watermarks table stores last successful watermark per table; audit_log table stores every execution record; GCS bucket holds transient AVRO staging files and Cloud Run Job container images via Artifact Registry",
+    "4. Consumption: Analytics and reporting teams query BigQuery via SQL, Looker Studio, or BigQuery Studio; stakeholder Yash independently accesses Airflow DAG run history UI for visual run status and task-level logs, plus a Looker Studio dashboard on the BigQuery audit_log table showing per-run health, row count trends, last successful timestamp, and validation outcomes; Cloud Monitoring alerting policies on Cloud Logging log-based metrics fire email or PagerDuty alerts on Cloud Run Job failure events within the defined SLA evaluation window"
+  ],
+  "key_constraints": [
+    "Gate incremental load activation: incremental pipeline must not begin until historical load validation is fully passed and signed off",
+    "Implement a monitoring dashboard or log-based visibility layer enabling stakeholders to independently review load success without developer involvement",
+    "Track incremental changes using timestamp-based or primary key delta strategies, consistently applied across all runs",
+    "Pipeline must be reliable and scalable to support ongoing scheduled loads, potential additional tables, and both hourly and daily cadences",
+    "Enforce primary key uniqueness in BigQuery after every load execution"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Correctness",
+      "mitigation": "Implement a deterministic MySQL-to-BigQuery column type mapping registry as a configuration artifact in the Cloud Run Job container; enforce this mapping in the pre-load schema check step; log and alert on any column whose MySQL type has no registered BigQuery mapping before the load proceeds"
+    },
+    {
+      "risk": "Incremental Completeness",
+      "mitigation": "Audit the MySQL employees table schema and application write patterns to confirm updated_at reliability before go-live; implement a supplementary post-incremental anomaly check that compares the expected row delta (based on historical average) against the actual rows loaded, alerting on significant deviations; document a quarterly full-table reconciliation procedure"
+    },
+    {
+      "risk": "Security and Credential Management",
+      "mitigation": "Store all MySQL credentials and the Cloud SQL instance connection name in Google Secret Manager; inject secrets at runtime via Cloud Run Jobs secret environment variable bindings and Composer's SecretManagerBackend; rotate MySQL password and service account keys on a defined schedule; evaluate migration to Private IP connectivity for Cloud SQL to eliminate public internet exposure"
+    }
+  ],
+  "scoring_one_liner": "Scored 6.85/10 \u2014 Cost 6, Scalability 8, Complexity 6, Latency 7, Operability 8. Trade-offs accepted: The Cloud Composer infrastructure cost floor (~$200-400/month for the GKE Autopilot cluster) is consciously accepted over Option 3's pure serverless model for three reasons: (1) proper workflow orchestration is a hard functional requirement for the historical-load gate and cannot be safely approximated with a GCS sentinel file; (2) the Airflow UI provides the stakeholder self-service monitoring visibility Yash requires without custom development effort; (3) the Composer cost is amortized across the expected multi-table expansion as this pipeline matures beyond the initial employees table. The scalability ceiling of Cloud Run Jobs relative to Dataflow is accepted because data volume is unknown and assumed to be sub-100GB; if volume is confirmed to exceed Cloud Run Job memory or timeout limits, the processing layer can be swapped to Dataflow Flex Templates with the Composer orchestration layer and all DAG logic remaining unchanged.",
+  "open_blockers": [
+    "What is the approximate row count, total data size (GB), and daily row delta of the MySQL employees table? This is required to size Cloud Run Job memory limits (default 512MB, max 32GB), determine whether paginated chunked extraction is required for the historical load, and produce a meaningful BigQuery storage and processing cost estimate before deployment.",
+    "Does the MySQL employees table have an updated_at or equivalent TIMESTAMP column that is reliably populated on every INSERT and UPDATE operation? If this column does not exist or is not consistently maintained, the entire incremental extraction strategy must be redesigned using a primary key range scan or a full-table hash comparison approach.",
+    "Are hard deletes performed on the MySQL employees table, or are records soft-deleted via a deleted_at or is_active flag? Hard deletes are invisible to timestamp-based incremental extraction and will cause the BigQuery copy to retain rows that have been deleted at source, leading to data divergence over time."
+  ],
+  "ticket_id": "SCRUM-123"
+}

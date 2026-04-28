@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Run Jobs + BigQuery Native Load (Recommended)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Run Jobs (Python 3.12, mysql-connector-python, Cloud SQL Auth Proxy sidecar)",
+    "processing": "BigQuery Native LOAD JOB + MERGE + Cloud Run Jobs (Python validation logic)",
+    "storage": "GCS (staging, 7-day lifecycle) + BigQuery (target + audit_log + watermark)",
+    "orchestration": "Cloud Composer 2 (Apache Airflow)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio (audit_log dashboard)",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer triggers a Cloud Run Job in two distinct modes: (1) Full historical load mode \u2014 containerized Python job connects to Cloud SQL MySQL via Cloud SQL Auth Proxy, executes an unbounded SELECT with PK ordering, streams results in configurable batch chunks to GCS staging bucket as Parquet files; (2) Incremental load mode \u2014 job executes a delta SELECT filtering on updated_at timestamp greater than the last successful watermark stored in a BigQuery watermark table, writes delta records to GCS staging.",
+    "2. Processing: Cloud Run Job performs ordered validation stages before and after load: pre-load schema compatibility check by comparing MySQL information_schema against BigQuery table schema (detecting new columns, type mismatches, nullable conflicts), null constraint violation scan with structured log output, and row count extraction from MySQL source. BigQuery native LOAD JOB ingests validated GCS Parquet files into a staging table. BigQuery MERGE statement applies upserts from staging to target table enforcing PK uniqueness. Post-load validation Cloud Run Job queries BigQuery row count against MySQL source count and writes reconciliation result to audit_log table.",
+    "3. Storage: GCS serves as an ephemeral staging zone with a 7-day object lifecycle policy enabling replay of failed loads without re-extracting from MySQL. BigQuery verizon_data_deah dataset is the authoritative analytical target store. A BigQuery watermark table persists the last successful incremental extraction timestamp per table. A BigQuery audit_log table records per-run metadata: run_id, pipeline_mode, table_name, rows_extracted, rows_loaded, validation_status, null_violations, schema_check_result, and run_timestamp.",
+    "4. Consumption: Analytics and reporting teams query BigQuery via SQL or connected BI tools such as Looker or Looker Studio. Stakeholder Yash accesses a dedicated Looker Studio dashboard connected directly to the BigQuery audit_log table, enabling self-service load health review including success or failure status, row count reconciliation results, and schema check outcomes for every run without developer involvement. Cloud Monitoring alert policies trigger on Composer DAG task failure and Cloud Run Job non-zero exit codes within the defined SLA window via email or PagerDuty notification channels."
+  ],
+  "key_constraints": [
+    "Execute a one-time full historical load of the MySQL employees table into BigQuery with 100% data completeness and no data loss",
+    "Prevent data duplication and gaps across all incremental load cycles; enforce primary key uniqueness in BigQuery after every load execution",
+    "Track incremental changes using timestamp-based or primary key delta strategies, consistently applied across all runs",
+    "Perform pre-load schema compatibility checks covering data types, null handling, field names, and new column handling strategy before each load execution",
+    "Perform post-load row count validation between MySQL source and BigQuery target for every load cycle"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Volume Unknown",
+      "mitigation": "Execute a row count and estimated data size query against MySQL (SELECT COUNT(*), AVG(LENGTH(CONCAT_WS(',', <columns>))) FROM employees) before architecture is finalized. If volume exceeds 20 GB, implement partitioned PK-range extraction with configurable batch size and parallel Cloud Run Job task instances. Schedule a formal volume review checkpoint at 6 months post-production."
+    },
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Implement pre-load schema compatibility check as a mandatory non-skippable validation step in the Cloud Run Job that compares MySQL information_schema.COLUMNS against the BigQuery table schema. Define and document the new column handling policy before first production run: recommended policy is to automatically add new nullable columns to BigQuery with STRING type and alert on type mismatches, and to block load and page on-call on column removal or type narrowing."
+    },
+    {
+      "risk": "Incremental Delta Strategy Dependency",
+      "mitigation": "Confirm presence and reliability of a timestamp column via MySQL schema inspection in sprint 0. If no reliable timestamp column exists, evaluate options in priority order: (1) add an updated_at column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP to the MySQL schema, (2) enable MySQL binary log (binlog) capture via Datastream as a supplementary change detection mechanism, (3) implement full-table comparison using hash checksums as a fallback at higher cost."
+    }
+  ],
+  "scoring_one_liner": "Scored 7.70/10 \u2014 Cost 8, Scalability 7, Complexity 8, Latency 7, Operability 9. Trade-offs accepted: Three trade-offs are explicitly accepted: (1) Scalability ceiling is 7/10 versus 9/10 for Dataflow and Dataproc \u2014 accepted because the probability that a single operational employees table will exceed Cloud Run single-container capacity (32 GB memory) is low at assumed volume, and a partitioned extraction pattern can be introduced incrementally if volume growth is confirmed at the 6-month review checkpoint. (2) Manual PK-range partitioning must be implemented if volume scales \u2014 accepted as a deferred complexity that does not affect initial delivery scope. (3) Incremental delta strategy requires confirmation of a reliable timestamp column in MySQL before implementation begins \u2014 flagged as a blocking open question that must be resolved in sprint 0 before any incremental pipeline code is written.",
+  "open_blockers": [
+    "What is the current row count and approximate uncompressed data size in GB of the MySQL agentichub.employees table? This is a blocking question that determines whether Cloud Run Jobs single-container extraction is sufficient or whether partitioned parallel extraction must be implemented from the outset.",
+    "Does the employees table have a reliable monotonically updated timestamp column such as updated_at or modified_at that is populated on every INSERT and UPDATE operation? If not, what audit or change-tracking mechanism exists on the table that could serve as a delta extraction basis?",
+    "What is the agreed numeric SLA duration for pipeline failure alert delivery \u2014 specifically, what is the maximum acceptable elapsed time from pipeline failure detection to stakeholder notification for daily cadence runs and for hourly cadence runs respectively?"
+  ],
+  "ticket_id": "SCRUM-123"
+}

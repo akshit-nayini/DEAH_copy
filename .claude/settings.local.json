@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(pip install:*)",
+      "Bash(python -c ' *)",
+      "Bash(python -m pytest core/utilities/llm/tests/test_factory_env_override.py -v)"
+    ]
+  }
+}

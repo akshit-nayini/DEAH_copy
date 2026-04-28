@@ -1,0 +1,41 @@
+%% Architecture Flow: 5gcore | GCP | batch
+flowchart TB
+
+    subgraph rec["⭐ Option 2: Cloud Composer + Cloud Run Jobs + GCS + BigQuery Native (Recommended) — Recommended"]
+        I1["📥 Ingestion<br/>Cloud Run Jobs (Python 3.12, Cloud SQL Python Connector, pandas-gbq)"]
+        P1["⚙️ Processing<br/>BigQuery Load Jobs + BigQuery Stored Procedures (sp_mysqltobq_load)"]
+        S1["💾 Storage<br/>BigQuery (verizon_data_dea) + GCS (staging)"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Composer 2 (Airflow 2.9)"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring + Cloud Logging + Looker Studio (on bq_load_audit)"]
+        IaC1["🔨 IaC<br/>Terraform"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o1["Option 1: Cloud Composer + Dataflow JDBC (Enterprise Beam Pipeline)"]
+        I1["📥 Ingestion<br/>Dataflow (Apache Beam JDBC IO + Cloud SQL Proxy sidecar)"]
+        P1["⚙️ Processing<br/>Dataflow (Apache Beam) + BigQuery Stored Procedures"]
+        S1["💾 Storage<br/>BigQuery (verizon_data_dea) + GCS (staging)"]
+        C1["📊 Consumption<br/>Consumption"]
+        I1 --> P1 --> S1 --> C1
+    end
+
+    subgraph o3["Option 3: Datastream CDC + BigQuery Native + Cloud Composer (Event-Driven Replication)"]
+        I3["📥 Ingestion<br/>Datastream (MySQL CDC with BigQuery native destination)"]
+        P3["⚙️ Processing<br/>BigQuery Stored Procedures (sp_mysqltobq_load) + Cloud Run Jobs (reconciliation queries)"]
+        S3["💾 Storage<br/>BigQuery (verizon_data_dea)"]
+        C3["📊 Consumption<br/>Consumption"]
+        I3 --> P3 --> S3 --> C3
+    end
+
+    rec ~~~ o1
+    o1 ~~~ o3
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I1,P1,S1,C1,I3,P3,S3,C3 rejected

@@ -1,0 +1,159 @@
+{
+  "agent": "data_model",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-123",
+  "source_tables": [
+    "employees"
+  ],
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_employees",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "employee_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique employee identifier. Source PK. decimal(10,0) has no fractional part; INT64 is the idiomatic BigQuery integer type."
+        },
+        {
+          "name": "first_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee first name. BigQuery STRING is variable-length; no max-length constraint required."
+        },
+        {
+          "name": "last_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee last name."
+        },
+        {
+          "name": "email",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee email address. NOT NULL in source; null-constraint validation must be applied pre-load."
+        },
+        {
+          "name": "phone_number",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Employee phone number. Nullable in source; NULLs must be preserved."
+        },
+        {
+          "name": "hire_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Date the employee was hired. Direct DATE-to-DATE mapping; no timezone conversion required."
+        },
+        {
+          "name": "job_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Job role code. Cluster column 2 of 3; frequently used in WHERE filters for job-level analytics."
+        },
+        {
+          "name": "salary",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee salary with two decimal places. BigQuery NUMERIC (29 digits, 9 decimal places) safely accommodates decimal(8,2)."
+        },
+        {
+          "name": "commission_pct",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Commission percentage. Nullable \u2014 NULL indicates the employee is not on a commission plan."
+        },
+        {
+          "name": "manager_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referential FK to employee_id identifying the employee's direct manager. NULL for top-level employees (e.g. CEO)."
+        },
+        {
+          "name": "department_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Department identifier. Cluster column 1 of 3; highest-selectivity cluster key for department-level filtering."
+        },
+        {
+          "name": "status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employment status (e.g. ACTIVE, INACTIVE). Cluster column 3 of 3; low-cardinality, frequently used in WHERE predicates."
+        },
+        {
+          "name": "created_date",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp. Partition column (DAY granularity). NOT NULL; used as primary time-range partition key and historical load boundary."
+        },
+        {
+          "name": "updated_date",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Record last-update timestamp. Nullable. Used as the high-watermark delta key for incremental load tracking; pipeline queries MAX(updated_date) from BigQuery to identify changed records in MySQL."
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_employees",
+      "from_column": "manager_id",
+      "to_table": "stg_employees",
+      "to_column": "employee_id",
+      "type": "self-referential"
+    }
+  ],
+  "partitioning": {
+    "stg_employees": {
+      "type": "TIMESTAMP",
+      "column": "created_date",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_employees": [
+      "department_id",
+      "job_id",
+      "status"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_employees",
+      "to_table": "stg_employees",
+      "type": "many-to-one",
+      "notes": "Many employees can share the same manager (manager_id references employee_id on the same table). Top-level employees carry a NULL manager_id. Self-join is the only inferable relationship within the single-table source schema."
+    }
+  ]
+}

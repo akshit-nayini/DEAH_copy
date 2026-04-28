@@ -1,0 +1,14 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,scd_role,notes
+
+Oracle HR,EMPLOYEES,EMPLOYEE_ID,NUMBER(6),employees,employee_id,NUMERIC,CAST(EMPLOYEE_ID AS NUMERIC),False,True,natural_key,Primary key
+
+Oracle HR,EMPLOYEES,FIRST_NAME,VARCHAR2(50),employees,first_name,VARCHAR,TRIM(FIRST_NAME),False,False,,
+
+Oracle HR,EMPLOYEES,HIRE_DATE,DATE,employees,hire_date,DATE,CAST(HIRE_DATE AS DATE),True,False,,Date column — partition key candidate
+
+derived,derived,derived,N/A,employees,source_system,VARCHAR,'Oracle HR',False,False,metadata,Source system identifier
+
+derived,derived,derived,N/A,employees,batch_id,BIGINT,CURRENT_BATCH_ID(),False,False,metadata,Batch run identifier
+
+derived,derived,derived,N/A,employees,load_timestamp,TIMESTAMP,CURRENT_TIMESTAMP(),False,False,metadata,Row load timestamp
+

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python main.py --ticket SCRUM-75 --dry-run)",
+      "Bash(gcloud auth *)",
+      "Bash(gcloud config *)",
+      "Bash(curl -s -H \"Metadata-Flavor: Google\" \"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/scopes\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('type:', d.get\\('type'\\)\\); print\\('scopes:', d.get\\('scopes', 'N/A'\\)\\); print\\('client_id:', d.get\\('client_id','N/A'\\)[:30] if d.get\\('client_id'\\) else 'N/A'\\)\")",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Skill(claude-api)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 *)",
+      "Bash(git -C /home/varun_akarapu/DEAH/core/development/output/git_workspace remote get-url origin)",
+      "Bash(python -m pytest tests/test_run_git.py -v)",
+      "Bash(.venv/bin/python *)",
+      "Bash(python -m py_compile agents/generator/prompts.py)",
+      "Bash(python -m py_compile agents/reviewer/prompts.py)"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+layer_prefixes:
+  stg: "stg_"
+  int: "int_"
+  fct: "fct_"
+  dim: "dim_"
+  raw: "raw_"
+
+naming_rules:
+  case: "snake_case"
+  max_length: 128
+  reserved_words:
+    - "all"
+    - "and"
+    - "as"
+    - "select"
+    - "from"
+    - "where"
+    - "group"
+    - "order"
+    - "limit"
+
+dataset_prefixes:
+  dev: "dev_"
+  staging: "staging_"
+  prod: ""
+
+sql_formatting:
+  keyword_case: "upper"
+  indent_size: 2
+  comma_style: "trailing"
+  max_line_length: 120

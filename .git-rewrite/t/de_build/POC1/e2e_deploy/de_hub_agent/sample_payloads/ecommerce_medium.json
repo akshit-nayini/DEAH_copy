@@ -1,0 +1,176 @@
+{
+  "version": "1.0",
+  "request_id": "poc-demo-001",
+  "data_model": {
+    "tables": [
+      {
+        "name": "customer",
+        "layer": "dim",
+        "description": "Customer dimension table with SCD Type-2 tracking for address and segment changes",
+        "columns": [
+          {"name": "customer_id", "data_type": "INT64", "nullable": false, "description": "Unique customer identifier from source system", "is_pii": false},
+          {"name": "first_name", "data_type": "STRING", "nullable": false, "description": "Customer first name", "is_pii": true},
+          {"name": "last_name", "data_type": "STRING", "nullable": false, "description": "Customer last name", "is_pii": true},
+          {"name": "email", "data_type": "STRING", "nullable": false, "description": "Customer email address", "is_pii": true},
+          {"name": "phone", "data_type": "STRING", "nullable": true, "description": "Customer phone number", "is_pii": true},
+          {"name": "address_line1", "data_type": "STRING", "nullable": true, "description": "Street address line 1", "is_pii": true},
+          {"name": "city", "data_type": "STRING", "nullable": true, "description": "City name"},
+          {"name": "state", "data_type": "STRING", "nullable": true, "description": "State or province code"},
+          {"name": "country", "data_type": "STRING", "nullable": true, "description": "ISO 3166-1 country code"},
+          {"name": "customer_segment", "data_type": "STRING", "nullable": true, "description": "Business segment: premium, standard, basic"},
+          {"name": "created_date", "data_type": "DATE", "nullable": false, "description": "Account creation date"},
+          {"name": "updated_at", "data_type": "TIMESTAMP", "nullable": false, "description": "Last modification timestamp from source"}
+        ],
+        "primary_key": ["customer_id"],
+        "partition_config": {"column": "created_date", "type": "MONTH"},
+        "cluster_columns": ["customer_segment", "country"],
+        "refresh_strategy": "scd_type_2",
+        "source_table": "source_crm.customers"
+      },
+      {
+        "name": "product",
+        "layer": "dim",
+        "description": "Product dimension table with category hierarchy",
+        "columns": [
+          {"name": "product_id", "data_type": "INT64", "nullable": false, "description": "Unique product identifier"},
+          {"name": "product_name", "data_type": "STRING", "nullable": false, "description": "Product display name"},
+          {"name": "category", "data_type": "STRING", "nullable": false, "description": "Top-level product category"},
+          {"name": "subcategory", "data_type": "STRING", "nullable": true, "description": "Product subcategory"},
+          {"name": "brand", "data_type": "STRING", "nullable": true, "description": "Product brand name"},
+          {"name": "unit_price", "data_type": "FLOAT64", "nullable": false, "description": "Current unit price in USD"},
+          {"name": "cost_price", "data_type": "FLOAT64", "nullable": true, "description": "Unit cost price in USD"},
+          {"name": "is_active", "data_type": "BOOL", "nullable": false, "description": "Whether product is currently active for sale", "default_value": "true"},
+          {"name": "created_date", "data_type": "DATE", "nullable": false, "description": "Product catalog entry date"},
+          {"name": "updated_at", "data_type": "TIMESTAMP", "nullable": false, "description": "Last modification timestamp"}
+        ],
+        "primary_key": ["product_id"],
+        "cluster_columns": ["category", "brand"],
+        "refresh_strategy": "scd_type_1",
+        "source_table": "source_catalog.products"
+      },
+      {
+        "name": "orders",
+        "layer": "fct",
+        "description": "Fact table for customer orders with line-item granularity",
+        "columns": [
+          {"name": "order_id", "data_type": "INT64", "nullable": false, "description": "Unique order identifier"},
+          {"name": "order_line_id", "data_type": "INT64", "nullable": false, "description": "Line item sequence within order"},
+          {"name": "customer_id", "data_type": "INT64", "nullable": false, "description": "FK to customer dimension"},
+          {"name": "product_id", "data_type": "INT64", "nullable": false, "description": "FK to product dimension"},
+          {"name": "order_date", "data_type": "DATE", "nullable": false, "description": "Date the order was placed"},
+          {"name": "quantity", "data_type": "INT64", "nullable": false, "description": "Number of units ordered"},
+          {"name": "unit_price", "data_type": "FLOAT64", "nullable": false, "description": "Price per unit at time of order"},
+          {"name": "discount_amount", "data_type": "FLOAT64", "nullable": true, "description": "Discount applied to line item"},
+          {"name": "total_amount", "data_type": "FLOAT64", "nullable": false, "description": "Line total: quantity * unit_price - discount"},
+          {"name": "order_status", "data_type": "STRING", "nullable": false, "description": "Order status: pending, confirmed, shipped, delivered, cancelled"},
+          {"name": "shipping_date", "data_type": "DATE", "nullable": true, "description": "Date the order was shipped"},
+          {"name": "loaded_at", "data_type": "TIMESTAMP", "nullable": false, "description": "ETL load timestamp"}
+        ],
+        "primary_key": ["order_id", "order_line_id"],
+        "foreign_keys": [
+          {"column": "customer_id", "references_table": "customer", "references_column": "customer_id"},
+          {"column": "product_id", "references_table": "product", "references_column": "product_id"}
+        ],
+        "partition_config": {"column": "order_date", "type": "DAY"},
+        "cluster_columns": ["customer_id", "product_id", "order_status"],
+        "refresh_strategy": "incremental_append",
+        "source_table": "source_orders.order_lines"
+      },
+      {
+        "name": "daily_sales_summary",
+        "layer": "fct",
+        "description": "Daily aggregated sales metrics by product and region",
+        "columns": [
+          {"name": "summary_date", "data_type": "DATE", "nullable": false, "description": "Aggregation date"},
+          {"name": "product_id", "data_type": "INT64", "nullable": false, "description": "FK to product dimension"},
+          {"name": "region", "data_type": "STRING", "nullable": false, "description": "Sales region"},
+          {"name": "total_orders", "data_type": "INT64", "nullable": false, "description": "Count of orders"},
+          {"name": "total_quantity", "data_type": "INT64", "nullable": false, "description": "Sum of units sold"},
+          {"name": "gross_revenue", "data_type": "FLOAT64", "nullable": false, "description": "Sum of total_amount before discounts"},
+          {"name": "net_revenue", "data_type": "FLOAT64", "nullable": false, "description": "Sum of total_amount after discounts"},
+          {"name": "avg_order_value", "data_type": "FLOAT64", "nullable": false, "description": "Average order value for the day"}
+        ],
+        "primary_key": ["summary_date", "product_id", "region"],
+        "partition_config": {"column": "summary_date", "type": "DAY"},
+        "cluster_columns": ["product_id", "region"],
+        "refresh_strategy": "full_refresh",
+        "source_table": "derived_from_fct_orders"
+      },
+      {
+        "name": "order_events",
+        "layer": "stg",
+        "description": "Staging table for raw order status change events from event stream",
+        "columns": [
+          {"name": "event_id", "data_type": "STRING", "nullable": false, "description": "Unique event identifier (UUID)"},
+          {"name": "order_id", "data_type": "INT64", "nullable": false, "description": "Associated order ID"},
+          {"name": "event_type", "data_type": "STRING", "nullable": false, "description": "Event type: created, updated, shipped, delivered, cancelled"},
+          {"name": "event_timestamp", "data_type": "TIMESTAMP", "nullable": false, "description": "When the event occurred"},
+          {"name": "event_payload", "data_type": "JSON", "nullable": true, "description": "Raw JSON payload from event stream"},
+          {"name": "loaded_at", "data_type": "TIMESTAMP", "nullable": false, "description": "ETL ingestion timestamp"}
+        ],
+        "primary_key": ["event_id"],
+        "partition_config": {"column": "event_timestamp", "type": "DAY"},
+        "cluster_columns": ["order_id", "event_type"],
+        "refresh_strategy": "incremental_append",
+        "source_table": "source_events.order_status_changes"
+      },
+      {
+        "name": "shipping_region",
+        "layer": "dim",
+        "description": "Reference dimension for shipping regions and zones",
+        "columns": [
+          {"name": "region_code", "data_type": "STRING", "nullable": false, "description": "Unique region code"},
+          {"name": "region_name", "data_type": "STRING", "nullable": false, "description": "Human-readable region name"},
+          {"name": "country", "data_type": "STRING", "nullable": false, "description": "ISO country code"},
+          {"name": "shipping_zone", "data_type": "STRING", "nullable": false, "description": "Shipping zone for cost calculation"},
+          {"name": "avg_delivery_days", "data_type": "INT64", "nullable": true, "description": "Average delivery days for the zone"}
+        ],
+        "primary_key": ["region_code"],
+        "refresh_strategy": "full_refresh",
+        "source_table": "source_reference.shipping_regions"
+      }
+    ],
+    "relationships": [
+      {"from_table": "orders", "from_column": "customer_id", "to_table": "customer", "to_column": "customer_id", "relationship_type": "many_to_one"},
+      {"from_table": "orders", "from_column": "product_id", "to_table": "product", "to_column": "product_id", "relationship_type": "many_to_one"},
+      {"from_table": "daily_sales_summary", "from_column": "product_id", "to_table": "product", "to_column": "product_id", "relationship_type": "many_to_one"}
+    ]
+  },
+  "pipeline_architecture": {
+    "pattern": "batch",
+    "source_systems": ["source_crm", "source_catalog", "source_orders", "source_events", "source_reference"],
+    "data_flow": [
+      {"source": "source_crm.customers", "target": "dim_customer", "transform_type": "scd2"},
+      {"source": "source_catalog.products", "target": "dim_product", "transform_type": "scd1_merge"},
+      {"source": "source_orders.order_lines", "target": "fct_orders", "transform_type": "incremental"},
+      {"source": "fct_orders", "target": "fct_daily_sales_summary", "transform_type": "aggregate"},
+      {"source": "source_events.order_status_changes", "target": "stg_order_events", "transform_type": "incremental"},
+      {"source": "source_reference.shipping_regions", "target": "dim_shipping_region", "transform_type": "full_replace"}
+    ]
+  },
+  "tech_stack": {
+    "target_platform": "bigquery",
+    "orchestrator": "airflow",
+    "modeling_tool": "dbt",
+    "runtime": "python3.11"
+  },
+  "transformation_rules": [
+    {"rule_id": "TR-001", "source_columns": ["quantity", "unit_price", "discount_amount"], "target_column": "total_amount", "logic": "quantity * unit_price - COALESCE(discount_amount, 0)", "priority": 1},
+    {"rule_id": "TR-002", "source_columns": ["total_amount"], "target_column": "avg_order_value", "logic": "AVG(total_amount) grouped by summary_date, product_id, region", "priority": 1},
+    {"rule_id": "TR-003", "source_columns": ["first_name", "last_name", "email", "phone", "address_line1"], "target_column": "_pii_masking", "logic": "Apply SHA256 hashing to all PII columns in non-staging outputs", "priority": 1}
+  ],
+  "column_mappings": [
+    {"source_table": "source_crm.customers", "source_column": "cust_id", "target_column": "customer_id", "transform_logic": "CAST(cust_id AS INT64)"},
+    {"source_table": "source_crm.customers", "source_column": "fname", "target_column": "first_name"},
+    {"source_table": "source_crm.customers", "source_column": "lname", "target_column": "last_name"},
+    {"source_table": "source_crm.customers", "source_column": "email_addr", "target_column": "email"},
+    {"source_table": "source_orders.order_lines", "source_column": "ord_id", "target_column": "order_id", "transform_logic": "CAST(ord_id AS INT64)"},
+    {"source_table": "source_orders.order_lines", "source_column": "line_seq", "target_column": "order_line_id"}
+  ],
+  "schema_statistics": [
+    {"table_name": "customer", "estimated_row_count": 2500000, "estimated_size_gb": 1.2},
+    {"table_name": "product", "estimated_row_count": 50000, "estimated_size_gb": 0.02},
+    {"table_name": "orders", "estimated_row_count": 85000000, "estimated_size_gb": 28.5},
+    {"table_name": "order_events", "estimated_row_count": 120000000, "estimated_size_gb": 15.0}
+  ]
+}

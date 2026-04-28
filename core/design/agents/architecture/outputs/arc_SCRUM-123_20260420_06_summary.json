@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Cloud Run Jobs (Lightweight Python ETL)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Run Jobs + Cloud SQL Auth Proxy (SQLAlchemy)",
+    "processing": "Cloud Run Jobs (Python 3.11, pandas, google-cloud-bigquery SDK)",
+    "storage": "BigQuery + GCS",
+    "orchestration": "Cloud Composer 2 (Apache Airflow 2.x)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio",
+    "iac": "Terraform (google provider)"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer 2 DAG triggers a parameterized Cloud Run Job that connects to Cloud SQL (verizon-data:us-central1:mysql-druid-metadatastore) via the Cloud SQL Auth Proxy sidecar over a private VPC IP; the job reads the employees table using SQLAlchemy with a configurable timestamp or primary-key delta watermark persisted to a GCS state file between runs.",
+    "2. Processing: Within the Cloud Run Job container, a Python ETL module (1) validates schema compatibility by diffing MySQL INFORMATION_SCHEMA against BigQuery table schema \u2014 detecting type mismatches, new columns, and null constraint violations before load; (2) executes the BigQuery load job via the google-cloud-bigquery client; (3) runs post-load SQL assertions including row-count parity between MySQL source and BigQuery target and PK uniqueness enforcement via a MERGE or DISTINCT dedup query.",
+    "3. Storage: BigQuery verizon_data_deah dataset (date-partitioned employees table, clustered on primary key); GCS bucket for watermark state files (with Object Versioning enabled for rollback) and structured JSON audit log archives; Cloud Logging for structured per-run execution metadata and alert integration.",
+    "4. Consumption: Looker Studio dashboard connected to a BigQuery audit_log table (populated by each run with status, row counts, schema diff results, and timestamps) for stakeholder self-service health visibility with no developer involvement; Cloud Monitoring log-based alerting policies on Cloud Run Job failure exit codes and custom structured log metrics; BigQuery for downstream analytics and reporting queries."
+  ],
+  "key_constraints": [
+    "Design and implement a reliable and scalable pipeline to load MySQL tables into BigQuery on a scheduled basis, supporting both one-time full historical load and ongoing scheduled incremental loads",
+    "Gate incremental load activation: incremental pipeline must not begin until historical load validation is fully passed and signed off",
+    "Track incremental changes using timestamp-based or primary key delta strategies, consistently applied across all runs; prevent data duplication and gaps across all incremental load cycles",
+    "Perform pre-load schema compatibility checks covering data types, null handling, field names, and new column handling strategy before each load execution",
+    "Perform post-load row count validation between MySQL source and BigQuery target for every load cycle"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Volume Uncertainty",
+      "mitigation": "Instrument the first historical full load with explicit row count and byte volume logging to Cloud Logging. If volume exceeds 50 GB, implement chunked pagination with configurable page size in the Cloud Run Job, or re-evaluate migration to Dataflow (Option 1) for autoscaling processing."
+    },
+    {
+      "risk": "Watermark State Integrity",
+      "mitigation": "Enable GCS Object Versioning on the watermark state bucket for rollback capability. Implement a checksum integrity check at Cloud Run Job startup that validates the state file before reading its value. Define an explicit recovery runbook for state file corruption that triggers a bounded historical re-load from the last known good watermark."
+    },
+    {
+      "risk": "Schema Evolution",
+      "mitigation": "Implement a mandatory pre-load schema diff task in the Cloud Run Job that compares MySQL INFORMATION_SCHEMA.COLUMNS against the BigQuery table schema. Auto-add new nullable columns to BigQuery before load; for new NOT NULL columns, configure a default value strategy and alert to the stakeholder; halt and alert on data type conflicts."
+    }
+  ],
+  "scoring_one_liner": "Scored 7.65/10 \u2014 Cost 8, Scalability 7, Complexity 8, Latency 8, Operability 7. Trade-offs accepted: Lower raw scalability score (7 vs. 9 for Dataflow) is accepted because: (a) data volume is unquantified and presumed small-to-medium for a single employees table \u2014 the regime where Cloud Run Jobs excel; (b) Cloud Run Jobs can be parallelized via Composer DAG fan-out if the table inventory grows significantly; and (c) migration to Dataflow is a well-defined upgrade path if sustained load volume crosses 50 GB per run. Watermark state management risk is accepted with a documented mitigation strategy (overlap window, GCS Object Versioning, integrity checksum at job start).",
+  "open_blockers": [
+    "What is the approximate row count and byte size of the MySQL employees table? This is the most critical missing input \u2014 it directly determines whether Cloud Run Jobs (under 50 GB) or Dataflow (over 50 GB) is the correct compute tier and whether cost estimates can be produced.",
+    "What is the quantified SLA for monitoring alert triggers on pipeline failure \u2014 for example, alert within 15 minutes, 30 minutes, or 1 hour of job failure? This is required to configure Cloud Monitoring alerting policies and cannot be inferred from requirements.",
+    "Does the MySQL employees table have an updated_at or equivalent server-side timestamp column that is reliably updated on every INSERT and UPDATE? If absent, the incremental strategy must rely solely on primary key delta, which cannot detect in-place updates to existing rows."
+  ],
+  "ticket_id": "SCRUM-123"
+}

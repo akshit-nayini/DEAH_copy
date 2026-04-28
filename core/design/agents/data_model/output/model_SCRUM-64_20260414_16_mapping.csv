@@ -1,0 +1,15 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,notes
+MySQL,employees,EMPLOYEE_ID,"decimal(10,0)",stg_employees,employee_id,INT64,CAST(EMPLOYEE_ID AS INT64),False,True,Primary key - used for clustering to optimize UPSERT operations
+MySQL,employees,FIRST_NAME,varchar(50),stg_employees,first_name,STRING,FIRST_NAME,False,False,
+MySQL,employees,LAST_NAME,varchar(50),stg_employees,last_name,STRING,LAST_NAME,False,False,
+MySQL,employees,EMAIL,varchar(100),stg_employees,email,STRING,EMAIL,False,False,
+MySQL,employees,PHONE_NUMBER,varchar(20),stg_employees,phone_number,STRING,PHONE_NUMBER,False,False,
+MySQL,employees,HIRE_DATE,date,stg_employees,hire_date,DATE,CAST(HIRE_DATE AS DATE),False,False,
+MySQL,employees,JOB_ID,varchar(20),stg_employees,job_id,STRING,JOB_ID,False,False,
+MySQL,employees,SALARY,"decimal(8,2)",stg_employees,salary,NUMERIC,CAST(SALARY AS NUMERIC),False,False,
+MySQL,employees,COMMISSION_PCT,"decimal(4,2)",stg_employees,commission_pct,NUMERIC,CAST(COMMISSION_PCT AS NUMERIC),False,False,
+MySQL,employees,MANAGER_ID,"decimal(10,0)",stg_employees,manager_id,INT64,CAST(MANAGER_ID AS INT64),False,False,Self-referencing foreign key to employee_id
+MySQL,employees,DEPARTMENT_ID,"decimal(4,0)",stg_employees,department_id,INT64,CAST(DEPARTMENT_ID AS INT64),False,False,
+MySQL,employees,STATUS,varchar(10),stg_employees,status,STRING,STATUS,False,False,
+MySQL,employees,CREATED_DATE,timestamp,stg_employees,created_date,TIMESTAMP,CAST(CREATED_DATE AS TIMESTAMP),True,False,Used for partitioning to optimize daily incremental loads
+MySQL,employees,UPDATED_DATE,timestamp,stg_employees,updated_date,TIMESTAMP,CAST(UPDATED_DATE AS TIMESTAMP),False,True,Used for clustering and as watermark column for incremental syncs

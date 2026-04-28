@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<mxfile host="mermaid2drawio" modified="" agent="mermaid2drawio/1.0" version="21.0.0" type="device">
+  <diagram name="model_SCRUM-160_20260427_07_er_diagram" id="1e92ff08d11a">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="153cbbcbbb4e" value="" style="shape=table;startSize=0;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=0;strokeColor=#6c8ebf;fillColor=#FFFFFF;rounded=1;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="220" height="400" as="geometry"/>
+        </mxCell>
+        <mxCell id="b25489845531" value="stg_employees" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#dae8fc;top=0;left=0;bottom=0;right=0;fontStyle=1;fontSize=13;strokeColor=#6c8ebf;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="0" width="220" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="5a46d1809808" value="PK  INT64  employee_id" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;fontStyle=5;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="32" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6c09cf2ef7d" value="STRING  first_name" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="58" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="cb1ab99fd4db" value="STRING  last_name" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="84" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="1b3be17abca5" value="STRING  email" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="110" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="c29c153381cd" value="STRING  phone_number" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="136" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="be89da9b06ab" value="DATE  hire_date" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="162" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="54a1ac656a1d" value="STRING  job_id" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="188" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="5889929a52ba" value="NUMERIC  salary" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="214" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="62d092eedffe" value="NUMERIC  commission_pct" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="240" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="977865275639" value="FK  INT64  manager_id" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="266" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d7489da50d32" value="INT64  department_id" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="292" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="a70af92e5981" value="STRING  status" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="318" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="c20d17fec8a2" value="TIMESTAMP  created_date" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="344" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="0439f5bb302b" value="TIMESTAMP  updated_date" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="153cbbcbbb4e">
+          <mxGeometry x="0" y="370" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="03c29982f308" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;fontColor=#333333;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=1;" edge="1" parent="1" source="153cbbcbbb4e" target="153cbbcbbb4e" value="managed_by">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="54670e0d21fb" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#666666;fontStyle=1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="03c29982f308">
+          <mxGeometry x="-0.8" y="0" relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="227958b277f7" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#666666;fontStyle=1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="03c29982f308">
+          <mxGeometry x="0.8" y="0" relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

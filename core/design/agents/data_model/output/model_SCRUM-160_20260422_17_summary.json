@@ -1,0 +1,159 @@
+{
+  "agent": "data_model",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-160",
+  "source_tables": [
+    "employees"
+  ],
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_employees",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "employee_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique employee identifier; primary key and first component of the composite merge key used by sp_mysqltobq_load.sql for incremental upserts"
+        },
+        {
+          "name": "first_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee given name"
+        },
+        {
+          "name": "last_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee family name"
+        },
+        {
+          "name": "email",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Corporate email address; candidate for post-load uniqueness validation in data quality checks"
+        },
+        {
+          "name": "phone_number",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Contact phone number; nullable in source"
+        },
+        {
+          "name": "hire_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Date on which the employee was hired"
+        },
+        {
+          "name": "job_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Job role code; used as third clustering column to accelerate role-based analytical queries"
+        },
+        {
+          "name": "salary",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Base salary with two decimal places of precision"
+        },
+        {
+          "name": "commission_pct",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Commission rate expressed as a decimal percentage; null for non-commission roles"
+        },
+        {
+          "name": "manager_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referential foreign key to employee_id identifying the employee's direct manager; null for top-level managers"
+        },
+        {
+          "name": "department_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Department identifier; used as first clustering column to support department-level aggregations and filters"
+        },
+        {
+          "name": "status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employment status code (e.g. ACTIVE, INACTIVE); low-cardinality column used as second clustering column"
+        },
+        {
+          "name": "created_date",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "UTC timestamp of original record creation in the MySQL source system"
+        },
+        {
+          "name": "updated_date",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "UTC timestamp of the most recent update in MySQL; partition column (DAY granularity) with 60-day expiry; second component of the composite merge key for incremental loads"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_employees",
+      "from_column": "manager_id",
+      "to_table": "stg_employees",
+      "to_column": "employee_id",
+      "type": "many-to-one"
+    }
+  ],
+  "partitioning": {
+    "stg_employees": {
+      "type": "TIME",
+      "column": "updated_date",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_employees": [
+      "department_id",
+      "status",
+      "job_id"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_employees",
+      "to_table": "stg_employees",
+      "type": "many-to-one",
+      "notes": "Self-referential hierarchy: many employees report to one manager via manager_id -> employee_id; root managers carry a null manager_id. Rows where updated_date IS NULL will land in BigQuery's __NULL__ partition and are exempt from the 60-day partition expiry; this edge-case should be handled in the new-column handling and retention documentation."
+    }
+  ]
+}

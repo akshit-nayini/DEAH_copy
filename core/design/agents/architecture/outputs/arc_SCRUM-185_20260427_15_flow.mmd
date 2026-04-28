@@ -1,0 +1,41 @@
+%% Architecture Flow: mysql to bigquery data ingestion pipeline | GCP | batch
+flowchart TB
+
+    subgraph rec["⭐ Option 2: Google Datastream + BigQuery Direct (Managed CDC Replication with Composer Gating) — Recommended"]
+        I1["📥 Ingestion<br/>Google Datastream (MySQL binary log CDC + full backfill to BigQuery via GCS)"]
+        P1["⚙️ Processing<br/>BigQuery SQL (MERGE / DML procedures + SQL-based data quality assertions)"]
+        S1["💾 Storage<br/>Google Cloud Storage (Datastream staging buffer) + BigQuery (analytical store)"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Composer 2 (Apache Airflow 2.x)"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring + Cloud Logging + Looker Studio (stakeholder audit dashboard)"]
+        IaC1["🔨 IaC<br/>Terraform (hashicorp/google provider)"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o1["Option 1: Cloud Composer + Cloud Dataflow (Apache Beam) Batch Pipeline"]
+        I1["📥 Ingestion<br/>Cloud Dataflow (JDBC connector for MySQL via Flex Templates)"]
+        P1["⚙️ Processing<br/>Cloud Dataflow / Apache Beam SDK 2.x"]
+        S1["💾 Storage<br/>Google Cloud Storage (staging) + BigQuery (analytical store)"]
+        C1["📊 Consumption<br/>Consumption"]
+        I1 --> P1 --> S1 --> C1
+    end
+
+    subgraph o3["Option 3: Cloud Composer + Dataproc (PySpark) Batch Pipeline"]
+        I3["📥 Ingestion<br/>Dataproc (PySpark JDBC connector for MySQL) triggered by Cloud Composer"]
+        P3["⚙️ Processing<br/>Dataproc (PySpark) + BigQuery Load Jobs (Parquet from GCS)"]
+        S3["💾 Storage<br/>Google Cloud Storage (Parquet staging) + BigQuery (analytical store)"]
+        C3["📊 Consumption<br/>Consumption"]
+        I3 --> P3 --> S3 --> C3
+    end
+
+    rec ~~~ o1
+    o1 ~~~ o3
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I1,P1,S1,C1,I3,P3,S3,C3 rejected

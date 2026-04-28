@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Cloud Run Jobs + GCS + BigQuery Native (Recommended)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Run Jobs (Python 3.12, Cloud SQL Python Connector, pandas-gbq)",
+    "processing": "BigQuery Load Jobs + BigQuery Stored Procedures (sp_mysqltobq_load)",
+    "storage": "BigQuery (verizon_data_dea) + GCS (staging)",
+    "orchestration": "Cloud Composer 2 (Airflow 2.9)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio (on bq_load_audit)",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer 2 schedules Cloud Run Jobs on per-table hourly or daily cadences defined in Airflow Variables. Each Cloud Run Job connects to Cloud SQL MySQL (verizon-data:us-central1:mysql-druid-metadatastore) via the Cloud SQL Python Connector using IAM service-account authentication. A pre-flight step compares MySQL INFORMATION_SCHEMA column definitions against the BigQuery table schema; additive new columns are auto-provisioned in BigQuery via ALTER TABLE, breaking changes (type mutations, column drops) halt execution and write an ERROR record to bq_load_audit. For the historical load the job executes a full SELECT with no filter; for incremental loads it filters WHERE updated_date > last_watermark read from verizon_data_dea.bq_load_audit for that table. Results are written as Parquet files partitioned by run_id to GCS (gs://verizon-data-5gcore-staging/{table}/{run_id}/).",
+    "2. Processing: A BigQuery Load Job ingests Parquet files from GCS into a staging table (verizon_data_dea.{table}_stage). BigQuery stored procedure sp_mysqltobq_load is called via CALL statement and executes a MERGE from the staging table into the target table using (employee_id, updated_date) as the composite merge key, performing INSERT for new records and UPDATE for changed records. A post-merge BigQuery SQL validation script asserts: (1) MySQL source row count (captured in Cloud Run Job and stored in bq_load_audit) matches the staging row count; (2) no duplicate (employee_id, updated_date) pairs exist in the target table; (3) NOT NULL constraints are satisfied for all defined key columns. All assertion outcomes write PASS or FAIL records with counts and timestamps to bq_load_audit.",
+    "3. Storage: GCS bucket verizon-data-5gcore-staging with a 7-day lifecycle deletion rule on staged Parquet files. BigQuery dataset verizon_data_dea holds: the target table partitioned by _PARTITIONTIME with a 60-day partition expiry policy, a {table}_stage temporary staging table truncated before each load, and the permanent bq_load_audit table (no expiry) recording table_name, run_id, load_type, status, source_row_count, target_row_count, schema_validation_status, started_at, and completed_at for every execution.",
+    "4. Consumption: Looker Studio dashboard connected to verizon_data_dea.bq_load_audit provides stakeholder-facing load-success history, row-count reconciliation trend charts, schema-validation event log, and SLA compliance summary accessible without engineering involvement. Cloud Monitoring alerting policies send email and optional Pub/Sub notifications on Cloud Run Job non-zero exit codes, BigQuery stored procedure ERROR-severity log entries, and row-count reconciliation mismatches exceeding a configurable tolerance threshold."
+  ],
+  "key_constraints": [
+    "Support an initial data volume of 5 GB with ongoing growth of 1 GB/month",
+    "Execute all load logic via stored procedure sp_mysqltobq_load.sql with merge key on employee_id and updated_date",
+    "Block the incremental load pipeline from starting until full historical load validation is confirmed and passes",
+    "Enforce a 60-day data retention policy on the target BigQuery table",
+    "Provide stakeholder-accessible dashboards or log views enabling independent review of load success and execution history without engineering involvement"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Connectivity and Credential Management",
+      "mitigation": "Migrate to Private IP connectivity via VPC peering between the Cloud Run Jobs VPC connector and the Cloud SQL instance. Create a dedicated read-only database user for the pipeline service account. Store all MySQL credentials in Secret Manager with automatic 90-day rotation and mount them as volume secrets in Cloud Run Jobs. Enable Cloud SQL IAM database authentication as the long-term replacement for password-based access."
+    },
+    {
+      "risk": "Schema Drift at Source",
+      "mitigation": "Implement a pre-load schema comparison step in the Cloud Run Job that classifies changes as additive (new nullable column added to MySQL: auto-provision in BigQuery via ALTER TABLE and log as WARNING to bq_load_audit) or breaking (type change, column drop, NOT NULL added: halt execution, log ERROR to bq_load_audit, and fire an immediate alert). Document this strategy in the operational runbook and obtain DBA confirmation that no breaking DDL changes will be applied to production without a pipeline-team change request."
+    },
+    {
+      "risk": "Watermark Data Completeness",
+      "mitigation": "Schedule a weekly full-reconciliation Cloud Run Job that compares total source row counts per table against total BigQuery target row counts and alerts on discrepancies exceeding 0.1%. Document the watermark dependency assumption with the data owner and confirm that updated_date is a system-managed column with a database-level DEFAULT CURRENT_TIMESTAMP ON UPDATE trigger."
+    }
+  ],
+  "scoring_one_liner": "Scored 8.10/10 \u2014 Cost 8, Scalability 8, Complexity 8, Latency 8, Operability 9. Trade-offs accepted: The fixed Cloud Composer environment cost of approximately $300-400 per month is accepted as necessary to provide DAG-level dependency management, the historical-load gate sensor, per-table schedule flexibility, and retry semantics. The GCS Parquet staging hop adds minor processing latency measured in seconds that is inconsequential against hourly or daily SLAs. If future requirements shift to sub-hourly latency or high-frequency change capture, the architecture can be augmented with Datastream for CDC ingestion into the same bq_load_audit and BigQuery storage layer without replacing the core pipeline pattern.",
+  "open_blockers": [
+    "Hourly vs daily cadence per table has not been determined: the requirements state 'hourly or daily per table depending on business requirements' but do not define which tables require which cadence. This must be confirmed with Yash before Airflow schedule intervals and SLA alerting thresholds are configured.",
+    "The full list of MySQL source tables to be ingested has not been identified: only the employees table is confirmed. The complete table list must be agreed with the data owner before the historical load begins to ensure the 100% completeness gate is achievable and measurable.",
+    "Deployment environment strategy is unspecified: dev, staging, and production environments are assumed but not confirmed. A three-workspace Terraform strategy is recommended but requires confirmation to avoid deploying directly to production without a tested promotion path."
+  ],
+  "ticket_id": "SCRUM-160"
+}

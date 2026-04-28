@@ -1,0 +1,38 @@
+%% Architecture Flow: MySQL to BigQuery Data Ingestion Pipeline | GCP | batch
+flowchart TB
+
+    subgraph rec["⭐ Option 2: Cloud Composer + Cloud Run Jobs (Pragmatic Containerized Batch) — Recommended"]
+        I1["📥 Ingestion<br/>Cloud Run Jobs (Python 3.12 + SQLAlchemy 2.x + PyMySQL + Cloud SQL Auth Proxy sidecar)"]
+        P1["⚙️ Processing<br/>Cloud Run Jobs (Python-based schema validation, type coercion, null checks) + BigQuery SQL MERGE (PK dedup and upsert enforcement)"]
+        S1["💾 Storage<br/>BigQuery Storage Write API COMMITTED stream (target table, date-partitioned by load_date, PK-clustered) + BigQuery audit_log table + BigQuery run_state table + GCS (optional run artifact export)"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Composer 2 (Apache Airflow — DAG-based gating: historical validation and sign-off SensorOperator gates incremental activation; BranchOperator handles schema-change halt path; audit log write tasks on success and failure)"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring (Cloud Run Job exit code alerting policies, latency metrics) + Cloud Logging (structured JSON logs from Cloud Run container) + Looker Studio (BigQuery-backed stakeholder dashboard on audit_log and run_state)"]
+        IaC1["🔨 IaC<br/>Terraform"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o1["Option 1: Cloud Composer + Dataflow (Enterprise ETL Pipeline)"]
+        I1["📥 Ingestion<br/>Cloud Dataflow (Apache Beam JdbcIO + Cloud SQL Auth Proxy)"]
+        P1["⚙️ Processing<br/>Apache Beam on Cloud Dataflow (schema validation transforms, CoGroupByKey PK dedup, audit side-output)"]
+        S1["💾 Storage<br/>BigQuery (date-partitioned, PK-clustered target table + audit_log + run_state) + GCS (Dataflow temp/staging)"]
+        C1["📊 Consumption<br/>Consumption"]
+        I1 --> P1 --> S1 --> C1
+    end
+
+    subgraph o3["Option 3: Datastream + Cloud Composer Validation Layer (Native CDC Replication)"]
+        I3["📥 Ingestion<br/>Datastream (MySQL binlog CDC + backfill snapshot, BigQuery-native destination)"]
+        P3["⚙️ Processing<br/>BigQuery SQL (MERGE for upsert and delete propagation, INFORMATION_SCHEMA schema checks) + Cloud Composer 2 (post-land validation DAG orchestrating BigQuery SQL operators)"]
+        S3["💾 Storage<br/>BigQuery (Datastream-native staging table with CDC events + curated MERGE target table, date-partitioned, PK-clustered) + GCS (Datastream checkpoints, Composer artifacts)"]
+        C3["📊 Consumption<br/>Consumption"]
+        I3 --> P3 --> S3 --> C3
+    end
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I1,P1,S1,C1,I3,P3,S3,C3 rejected

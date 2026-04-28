@@ -1,0 +1,442 @@
+{
+  "agent": "data_model",
+  "project_name": "Clickstream Analytics Platform",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-117",
+  "source_tables": [
+    "clickstream.page_views",
+    "clickstream.user_events",
+    "clickstream.sessions",
+    "page_views",
+    "user_events",
+    "sessions"
+  ],
+  "source_connections": [
+    {
+      "db_type": "kafka",
+      "database": null,
+      "instance_connection_name": null,
+      "host": "pkc-abc12.us-central1.gcp.confluent.cloud",
+      "port": "9092",
+      "username": null,
+      "source_tables": [
+        "clickstream.page_views",
+        "clickstream.user_events",
+        "clickstream.sessions"
+      ]
+    },
+    {
+      "db_type": "bigquery",
+      "database": "verizon_clickstream_deah",
+      "instance_connection_name": null,
+      "host": null,
+      "port": null,
+      "username": null,
+      "source_tables": [
+        "page_views",
+        "user_events",
+        "sessions"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_page_views",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "event_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique event identifier for the page view; used as deduplication key within 10-minute sliding window"
+        },
+        {
+          "name": "session_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Session identifier linking the page view to a session in stg_sessions"
+        },
+        {
+          "name": "user_id",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Authenticated user identifier; null for anonymous users"
+        },
+        {
+          "name": "anonymous_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Anonymous user identifier based on cookie or device fingerprint"
+        },
+        {
+          "name": "page_url",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Full URL of the viewed page"
+        },
+        {
+          "name": "page_title",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "HTML title of the viewed page"
+        },
+        {
+          "name": "referrer_url",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Full URL of the referring page"
+        },
+        {
+          "name": "utm_source",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "UTM source campaign parameter"
+        },
+        {
+          "name": "utm_medium",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "UTM medium campaign parameter"
+        },
+        {
+          "name": "utm_campaign",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "UTM campaign name parameter"
+        },
+        {
+          "name": "device_type",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Device type (mobile, desktop, tablet); used as clustering column"
+        },
+        {
+          "name": "browser",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Browser name"
+        },
+        {
+          "name": "os",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Operating system name"
+        },
+        {
+          "name": "country_code",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "ISO 3166-1 alpha-2 country code; used as clustering column"
+        },
+        {
+          "name": "event_timestamp",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Timestamp when the page view event occurred; DAY partition column; must be within plus-or-minus 5 minutes of wall clock time"
+        },
+        {
+          "name": "ingested_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Timestamp when the event was written to the source Kafka topic"
+        }
+      ]
+    },
+    {
+      "table_name": "stg_user_events",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "event_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique event identifier; used as deduplication key within 10-minute sliding window"
+        },
+        {
+          "name": "session_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Session identifier linking the event to a session in stg_sessions"
+        },
+        {
+          "name": "user_id",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Authenticated user identifier; null for anonymous users"
+        },
+        {
+          "name": "anonymous_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Anonymous user identifier"
+        },
+        {
+          "name": "event_type",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Type of user interaction event (click, scroll, form_submit, etc.); used as clustering column"
+        },
+        {
+          "name": "event_category",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "High-level category grouping for the event"
+        },
+        {
+          "name": "event_label",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Descriptive label for the event"
+        },
+        {
+          "name": "page_url",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "URL of the page where the event occurred"
+        },
+        {
+          "name": "element_id",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "DOM element identifier that triggered the event"
+        },
+        {
+          "name": "event_value",
+          "data_type": "FLOAT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Numeric value associated with the event (e.g. scroll depth, monetary value)"
+        },
+        {
+          "name": "properties",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "JSON-encoded string of additional arbitrary event properties"
+        },
+        {
+          "name": "device_type",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Device type (mobile, desktop, tablet); used as clustering column"
+        },
+        {
+          "name": "event_timestamp",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Timestamp when the user event occurred; DAY partition column; must be within plus-or-minus 5 minutes of wall clock time"
+        },
+        {
+          "name": "ingested_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Timestamp when the event was written to the source Kafka topic"
+        }
+      ]
+    },
+    {
+      "table_name": "stg_sessions",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "session_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique session identifier"
+        },
+        {
+          "name": "user_id",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Authenticated user identifier; null for anonymous sessions; used as clustering column"
+        },
+        {
+          "name": "anonymous_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Anonymous user identifier"
+        },
+        {
+          "name": "session_start",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Timestamp when the session started; DAY partition column"
+        },
+        {
+          "name": "session_end",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Timestamp when the session ended; null for active or incomplete sessions"
+        },
+        {
+          "name": "duration_seconds",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Total session duration in seconds"
+        },
+        {
+          "name": "page_view_count",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Number of page views recorded in the session"
+        },
+        {
+          "name": "event_count",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Total number of interaction events recorded in the session"
+        },
+        {
+          "name": "landing_page",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "URL of the first page viewed in the session"
+        },
+        {
+          "name": "exit_page",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "URL of the last page viewed in the session"
+        },
+        {
+          "name": "channel",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Acquisition channel (organic, paid, direct, referral, email, etc.); used as clustering column"
+        },
+        {
+          "name": "country_code",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "ISO 3166-1 alpha-2 country code of the session; used as clustering column"
+        },
+        {
+          "name": "device_type",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Device type (mobile, desktop, tablet); used as clustering column"
+        },
+        {
+          "name": "is_bounce",
+          "data_type": "BOOL",
+          "nullable": true,
+          "primary_key": false,
+          "description": "True if the session consisted of a single page view with no further interaction"
+        },
+        {
+          "name": "ingested_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Timestamp when the session record was written to the source Kafka topic"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_page_views",
+      "from_column": "session_id",
+      "to_table": "stg_sessions",
+      "to_column": "session_id",
+      "type": "many_to_one"
+    },
+    {
+      "from_table": "stg_user_events",
+      "from_column": "session_id",
+      "to_table": "stg_sessions",
+      "to_column": "session_id",
+      "type": "many_to_one"
+    }
+  ],
+  "partitioning": {
+    "stg_page_views": {
+      "type": "DAY",
+      "column": "event_timestamp",
+      "granularity": "DAY"
+    },
+    "stg_user_events": {
+      "type": "DAY",
+      "column": "event_timestamp",
+      "granularity": "DAY"
+    },
+    "stg_sessions": {
+      "type": "DAY",
+      "column": "session_start",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_page_views": [
+      "session_id",
+      "device_type",
+      "country_code"
+    ],
+    "stg_user_events": [
+      "event_type",
+      "session_id",
+      "device_type"
+    ],
+    "stg_sessions": [
+      "user_id",
+      "channel",
+      "device_type",
+      "country_code"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_sessions",
+      "to_table": "stg_page_views",
+      "type": "one_to_many",
+      "notes": "One session generates many page view events; session_id in stg_page_views is a non-enforced foreign key to stg_sessions.session_id; page_view_count in stg_sessions reflects this cardinality"
+    },
+    {
+      "from_table": "stg_sessions",
+      "to_table": "stg_user_events",
+      "type": "one_to_many",
+      "notes": "One session generates many user interaction events; session_id in stg_user_events is a non-enforced foreign key to stg_sessions.session_id; event_count in stg_sessions reflects this cardinality"
+    }
+  ]
+}

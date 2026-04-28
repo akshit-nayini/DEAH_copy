@@ -1,0 +1,139 @@
+{
+  "source": "jira",
+  "ticket_id": "SCRUM-185",
+  "request_type": "new development",
+  "run_plan": [
+    "data_model",
+    "architecture",
+    "implementation_steps"
+  ],
+  "project_name": "mysql to bigquery data ingestion pipeline",
+  "objective": "Design and implement a reliable and scalable MySQL to BigQuery pipeline to support analytics, reporting, and long-term data storage, including a one-time full historical load for all identified tables and ongoing scheduled incremental loads (hourly or daily per table) thereafter.",
+  "business_context": "The analytics team requires reliable access to MySQL source data in Google BigQuery to support reporting and long-term data storage. All agreed-upon tables must be present in BigQuery with complete historical data and reliable scheduled data refreshes so the analytics team has full confidence in the data. Stakeholder-sponsored initiative owned by Shruthi B, currently in draft pending stakeholder review.",
+  "functional_requirements": [
+    "Perform a one-time full historical load from MySQL to BigQuery for all identified tables without data loss",
+    "Build and deploy a scheduled incremental data load pipeline from MySQL to BigQuery, running hourly or daily depending on per-table configuration",
+    "Use timestamp-based or primary key-based change tracking to identify and load only new or changed records each incremental cycle",
+    "Gate incremental loads so they cannot begin until the full historical load has been validated and confirmed complete",
+    "Implement pre-load schema validation that detects type mismatches, null handling inconsistencies, and field mapping issues between MySQL and BigQuery schemas",
+    "Define and implement a strategy for handling new columns that appear in the MySQL source (e.g., alert and hold, or auto-map with review)",
+    "Implement per-load data quality checks covering row count reconciliation, primary key uniqueness, and data type constraint verification",
+    "Maintain audit logs for all load executions capturing execution time, record counts, validation results, and any errors",
+    "Provide stakeholder visibility into load success through accessible logs or a dashboard without requiring engineering involvement",
+    "Apply merge key logic using employee_id and updated_date for upsert/merge operations via stored procedure sp_mysqltobq_load.sql"
+  ],
+  "data_requirements": {
+    "source_systems": [
+      "MySQL (database: agentichub, host: 34.70.79.163, instance: verizon-data:us-central1:mysql-druid-metadatastore)",
+      "Google BigQuery (project: verizon-data, dataset: verizon_data_dea)"
+    ],
+    "data_types": [
+      "Structured relational data with primary key and timestamp columns supporting change tracking"
+    ],
+    "volume": "Estimated 5 GB initial; growing at approximately 1 GB per month; retention period 60 days",
+    "frequency": "Daily scheduled ingestion; individual tables may run hourly or daily per configuration; one-time full historical load followed by ongoing incremental loads"
+  },
+  "technology": {
+    "stack": [
+      "MySQL",
+      "Google BigQuery",
+      "GCP"
+    ],
+    "environment": null,
+    "cloud_or_onprem": "cloud",
+    "preferred_tools": [
+      "sp_mysqltobq_load.sql"
+    ]
+  },
+  "non_functional": {
+    "performance": "Historical load must complete without data loss; incremental loads must not perform full table re-scans; change detection must use timestamps or primary keys only",
+    "scalability": "Pipeline must be reliable and scalable to accommodate 1 GB per month data growth",
+    "latency": null,
+    "sla": "Scheduled hourly or daily jobs must run without failures on defined cadence; 60-day data retention must be enforced"
+  },
+  "security": {
+    "data_sensitivity": null,
+    "access_controls": "Source MySQL connection uses username 'sa'; appropriate read permissions required on agentichub database",
+    "compliance": null
+  },
+  "constraints": {
+    "budget": null,
+    "timeline": null,
+    "technical_limitations": "Item currently in draft pending stakeholder review; incremental loads are gated and cannot begin until historical load validation passes; full table re-scans are not permitted for incremental change tracking"
+  },
+  "existing_architecture": null,
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    },
+    {
+      "db_type": "bigquery",
+      "database": "verizon_data_dea",
+      "instance_connection_name": null,
+      "host": null,
+      "port": null,
+      "username": null,
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Schedule interval is daily at the pipeline level; individual tables may run hourly or daily per configuration",
+    "The employees table is the initially identified source table; additional tables may be confirmed after stakeholder review",
+    "Merge key for upsert operations is composite: employee_id and updated_date",
+    "The stored procedure sp_mysqltobq_load.sql encapsulates the merge/upsert logic for loading into BigQuery",
+    "BigQuery target project is verizon-data and target dataset is verizon_data_dea"
+  ],
+  "inferred_assumptions": [
+    "Technology stack likely includes GCP-native or compatible orchestration and ingestion tooling (e.g., Cloud Composer, Dataflow, or Cloud Run), as no specific orchestration framework is named in the requirements",
+    "Source MySQL tables contain timestamp and/or primary key columns sufficient to support the change-tracking strategy described for incremental loads"
+  ],
+  "acceptance_criteria": [
+    "All agreed-upon tables are present and complete in BigQuery",
+    "Historical load is 100% complete without data loss",
+    "Scheduled hourly or daily jobs run without failures on defined cadence",
+    "Analytics team confirms data is reliable for reporting",
+    "Row counts are validated between MySQL and BigQuery for historical loads",
+    "Primary key uniqueness is verified in BigQuery after each load",
+    "Null handling and data type constraints are validated before load completes",
+    "Audit logs are maintained for every load execution",
+    "Incremental loads do not begin until historical load validation passes",
+    "Incremental jobs execute on defined hourly or daily schedule without failures",
+    "Change tracking correctly captures all new and modified records each cycle",
+    "No duplicate or missed records occur between consecutive load cycles",
+    "Change tracking uses timestamps or primary keys \u2014 full table re-scans are not permitted",
+    "Each incremental run is logged with execution time, record counts, and status",
+    "All schema mismatches are detected and logged before each load proceeds",
+    "Row counts match between MySQL and BigQuery after every load execution",
+    "Primary key uniqueness and data type constraints are verified per load run",
+    "Audit logs are complete and accessible for every load execution",
+    "Stakeholders can review load success independently via logs or dashboard without engineering involvement",
+    "Schema validation executes before every load \u2014 mismatches are logged and flagged",
+    "New MySQL columns are handled according to a defined strategy (e.g., alert and hold, or auto-map with review)",
+    "Row counts reconcile between MySQL source and BigQuery target within an accepted threshold",
+    "Audit logs capture load timestamp, row counts ingested, validation results, and any errors"
+  ],
+  "expected_outputs": [
+    "All agreed-upon MySQL tables loaded into BigQuery (project: verizon-data, dataset: verizon_data_dea) with complete historical data and no data loss",
+    "Reliable scheduled incremental load pipeline executing on defined hourly or daily cadence per table",
+    "Automated schema validation reports generated and logged before each load execution",
+    "Comprehensive audit logs for every load capturing execution time, record counts, validation results, and errors",
+    "Stakeholder-accessible dashboard or log interface enabling independent load success verification without engineering involvement"
+  ],
+  "classification": {
+    "ingestion_type": "batch",
+    "output_type": "pipeline"
+  },
+  "confidence": 0.78,
+  "low_confidence_warning": null,
+  "raw_text": "Ticket: SCRUM-185\nSummary: build mysql to bigquery data ingestion pipeline - new development\nStatus: To Do\nPriority: High\nAssignee: Harshit Kumar\nDescription:\nproject name: mysql to bigquery data ingestion pipeline requirement type: new_dvlp stakeholder: shruthi b schedule interval: daily objective design and implement a reliable and scalable mysql to bigquery pipeline to support analytics, reporting, and long-term data storage design and implement a reliable and scalable pipeline that loads identified mysql tables into google bigquery on a scheduled basis (hourly or daily depending on the table) to support analytics, reporting, and long-term data storage. requires both a one-time full historical load for all identified tables and ongoing scheduled incremental loads thereafter. item currently in draft pending stakeholder review. expected outcome all agreed-upon tables present in bigquery with complete historical data and reliable scheduled data refresh; analytics team has full confidence in the data connections and db details source: mysql connection verizon-data:us-central1:mysql-druid-metadatastore, ip: 34.70.79.163, port: 3306, db: agentichub, table: employees, username: sa. target: bigquery project: verizon-data, dataset: verizon_data_dea, table: employees. stored procedure: sp_mysqltobq_load.sql, merge key: employee_id and updated_date. estimated data: 5 gb, growth: 1 gb/month, retention: 60 days acceptance criteria success conditions: all agreed-upon tables are present and complete in bigquery historical load is 100% complete without data loss scheduled hourly or daily jobs run without failures on defined cadence analytics team confirms data is reliable for reporting validation rules: row counts must be validated between mysql and bigquery for historical loads primary key uniqueness must be verified in bigquery after each load null handling and data type constraints must be validated before load completes audit logs must be maintained for every load execution incremental loads must not begin until historical load validation passes\n\nComments:\n[2026-04-27T08:47:40.580-0500] Ahemad ALi Shaik: \ud83e\udd16 *Requirements Agent Summary*\n\nRequest Type: *new development*\nIngestion Type: *batch*  |  Output Type: *pipeline*  (confidence 78%)\nRun Plan: data_model \u2192 architecture \u2192 implementation_steps\n\nObjective: Design and implement a reliable and scalable MySQL to BigQuery pipeline to support analytics, reporting, and long-term data storage, including a one-time full historical load for all identified tables and ongoing scheduled incremental loads (hourly or daily per table) thereafter.\n\nBusiness Context:\nThe analytics team requires reliable access to MySQL source data in Google BigQuery to support reporting and long-term data storage. All agreed-upon tables must be present in BigQuery with complete historical data and reliable scheduled data refreshes so the analytics team has full confidence in the data. Stakeholder-sponsored initiative owned by Shruthi B, currently in draft pending stakeholder review.\n\nFunctional Requirements:\nPerform a one-time full historical load from MySQL to BigQuery for all identified tables without data loss\nBuild and deploy a scheduled incremental data load pipeline from MySQL to BigQuery, running hourly or daily depending on per-table configuration\nUse timestamp-based or primary key-based change tracking to identify and load only new or changed records each incremental cycle\nGate incremental loads so they cannot begin until the full historical load has been validated and confirmed complete\nImplement pre-load schema validation that detects type mismatches, null handling inconsistencies, and field mapping issues between MySQL and BigQuery schemas\nDefine and implement a strategy for handling new columns that appear in the MySQL source (e.g., alert and hold, or auto-map with review)\nImplement per-load data quality checks covering row count reconciliation, primary key uniqueness, and data type constraint verification\nMaintain audit logs for all load executions capturing execution time, record counts, validation results, and any errors\nProvide stakeholder visibility into load success through accessible logs or a dashboard without requiring engineering involvement\n\nAcceptance Criteria:\nAll agreed-upon tables are present and complete in BigQuery\nHistorical load is 100% complete without data loss\nScheduled hourly or daily jobs run without failures on defined cadence\nAnalytics team confirms data is reliable for reporting\nRow counts are validated between MySQL and BigQuery for historical loads\nPrimary key uniqueness is verified in BigQuery after each load\nNull handling and data type constraints are validated before load completes\nAudit logs are maintained for every load execution\nIncremental loads do not begin until historical load validation passes\nIncremental jobs execute on defined hourly or daily schedule without failures\nChange tracking correctly captures all new and modified records each cycle\nNo duplicate or missed records occur between consecutive load cycles\nChange tracking uses timestamps or primary keys \u2014 full table re-scans are not permitted\nEach incremental run is logged with execution time, record counts, and status\nAll schema mismatches are detected and logged before each load proceeds\nRow counts match between MySQL and BigQuery after every load execution\nPrimary key uniqueness and data type constraints are verified per load run\nAudit logs are complete and accessible for every load execution\nStakeholders can review load success independently via logs or dashboard without engineering involvement\nSchema validation executes before every load \u2014 mismatches are logged and flagged\nNew MySQL columns are handled according to a defined strategy (e.g., alert and hold, or auto-map with review)\nRow counts reconcile between MySQL source and BigQuery target within an accepted threshold\nAudit logs capture load timestamp, row counts ingested, validation results, and any errors\n\nSource Connections:\n  \u2022 mysql / None | None:None | user: None | tables: \n  \u2022 bigquery / None | None:None | user: None | tables: \n\n\u26a0\ufe0f Inferred Assumptions (please confirm or correct):\n  \u2022 Cloud environment is GCP given the use of Google BigQuery as the target system\n  \u2022 Technology stack likely includes GCP-native or compatible orchestration and ingestion tooling, though no specific frameworks or services are named in the requirements\n  \u2022 Source tables contain timestamp and/or primary key columns based on the change-tracking requirements described for incremental loads\n[2026-04-27T10:41:28.859-0500] Ahemad ALi Shaik: \ud83e\udd16 *Requirements Agent Summary*\n\nRequest Type: *new development*\nIngestion Type: *batch*  |  Output Type: *pipeline*  (confidence 78%)\nRun Plan: data_model \u2192 architecture \u2192 implementation_steps\n\nObjective: Design and implement a reliable and scalable MySQL to BigQuery pipeline to support analytics, reporting, and long-term data storage, including a one-time full historical load for all identified tables and ongoing scheduled incremental loads (hourly or daily per table) thereafter.\n\nBusiness Context:\nThe analytics team requires reliable access to MySQL source data in Google BigQuery to support reporting and long-term data storage. All agreed-upon tables must be present in BigQuery with complete historical data and reliable scheduled data refreshes so the analytics team has full confidence in the data. Stakeholder-sponsored initiative owned by Shruthi B, currently in draft pending stakeholder review.\n\nFunctional Requirements:\nPerform a one-time full historical load from MySQL to BigQuery for all identified tables without data loss\nBuild and deploy a scheduled incremental data load pipeline from MySQL to BigQuery, running hourly or daily depending on per-table configuration\nUse timestamp-based or primary key-based change tracking to identify and load only new or changed records each incremental cycle\nGate incremental loads so they cannot begin until the full historical load has been validated and confirmed complete\nImplement pre-load schema validation that detects type mismatches, null handling inconsistencies, and field mapping issues between MySQL and BigQuery schemas\nDefine and implement a strategy for handling new columns that appear in the MySQL source (e.g., alert and hold, or auto-map with review)\nImplement per-load data quality checks covering row count reconciliation, primary key uniqueness, and data type constraint verification\nMaintain audit logs for all load executions capturing execution time, record counts, validation results, and any errors\nProvide stakeholder visibility into load success through accessible logs or a dashboard without requiring engineering involvement\n\nAcceptance Criteria:\nAll agreed-upon tables are present and complete in BigQuery\nHistorical load is 100% complete without data loss\nScheduled hourly or daily jobs run without failures on defined cadence\nAnalytics team confirms data is reliable for reporting\nRow counts are validated between MySQL and BigQuery for historical loads\nPrimary key uniqueness is verified in BigQuery after each load\nNull handling and data type constraints are validated before load completes\nAudit logs are maintained for every load execution\nIncremental loads do not begin until historical load validation passes\nIncremental jobs execute on defined hourly or daily schedule without failures\nChange tracking correctly captures all new and modified records each cycle\nNo duplicate or missed records occur between consecutive load cycles\nChange tracking uses timestamps or primary keys \u2014 full table re-scans are not permitted\nEach incremental run is logged with execution time, record counts, and status\nAll schema mismatches are detected and logged before each load proceeds\nRow counts match between MySQL and BigQuery after every load execution\nPrimary key uniqueness and data type constraints are verified per load run\nAudit logs are complete and accessible for every load execution\nStakeholders can review load success independently via logs or dashboard without engineering involvement\nSchema validation executes before every load \u2014 mismatches are logged and flagged\nNew MySQL columns are handled according to a defined strategy (e.g., alert and hold, or auto-map with review)\nRow counts reconcile between MySQL source and BigQuery target within an accepted threshold\nAudit logs capture load timestamp, row counts ingested, validation results, and any errors\n\nSource Connections:\n  \u2022 mysql / None | None:None | user: None | tables: \n  \u2022 bigquery / None | None:None | user: None | tables: \n\n\u26a0\ufe0f Inferred Assumptions (please confirm or correct):\n  \u2022 Cloud environment is GCP given the use of Google BigQuery as the target system\n  \u2022 Technology stack likely includes GCP-native or compatible orchestration and ingestion tooling, though no specific frameworks or services are named in the requirements\n  \u2022 Source tables contain timestamp and/or primary key columns based on the change-tracking requirements described for incremental loads\n\n--- Related Tickets (2) ---\n\nRelated Ticket: SCRUM-186\nSummary: implement scheduled incremental load pipeline for mysql to bigquery\nStatus: To Do\nPriority: High\nDescription:\nproject name: mysql to bigquery data ingestion pipeline requirement type: new_dvlp stakeholder: shruthi b schedule interval: daily objective keep bigquery tables continuously up to date with mysql source data through reliable scheduled incremental loads after the historical baseline is established build and deploy a scheduled incremental data load pipeline from mysql to bigquery, running hourly or daily depending on per-table configuration. use timestamp-based or primary key-based change tracking to identify and load only new or changed records each cycle. incremental loads are gated and must not begin until the full historical load has been validated and confirmed complete. expected outcome scheduled incremental loads running reliably on the defined hourly or daily cadence with accurate change tracking and no data gaps or duplicates connections and db details mysql database (source tables with timestamp or primary key change-tracking columns), google bigquery (target dataset) acceptance criteria success conditions: incremental jobs execute on defined hourly or daily schedule without failures change tracking correctly captures all new and modified records each cycle no duplicate or missed records occur between consecutive load cycles pipeline is gated \u2014 incremental does not run until historical validation is confirmed validation rules: incremental loads must not begin until historical load validation has passed change tracking must use timestamps or primary keys \u2014 full table re-scans are not permitted each incremental run must be logged with execution time, record counts, and status\n\nRelated Ticket: SCRUM-187\nSummary: implement schema validation, data quality checks, and audit logging\nStatus: To Do\nPriority: High\nDescription:\nproject name: mysql to bigquery data ingestion pipeline requirement type: new_dvlp stakeholder: shruthi b schedule interval: on-demand objective ensure data integrity, detect schema drift early, and provide stakeholder confidence in data quality through automated validation checks and transparent audit logging build pre-load schema validation that detects type mismatches, null handling inconsistencies, and field mapping issues between mysql and bigquery, logging all discrepancies. define and implement a strategy for handling new columns that appear in mysql. implement per-load data quality checks covering row count reconciliation, primary key uniqueness, and data type constraint verification. maintain audit logs for all load executions and provide stakeholder visibility through accessible logs or a dashboard. expected outcome schema mismatches and data quality issues are automatically detected and logged; stakeholders can independently verify load success through accessible logs or dashboards without engineering involvement connections and db details mysql database (source schema and data), google bigquery (target schema and tables), audit log storage (logs or dashboard layer) acceptance criteria success conditions: all schema mismatches are detected and logged before each load proceeds row counts match between mysql and bigquery after every load execution primary key uniqueness and data type constraints are verified per load run audit logs are complete and accessible for every load execution stakeholders can review load success independently via logs or dashboard validation rules: schema validation must execute before every load \u2014 mismatches must be logged and flagged new mysql columns must be handled according to a defined strategy (e.g., alert and hold, or auto-map with review) row counts must reconcile between mysql source and bigquery target within an accepted threshold primary key uniqueness must be enforced in bigquery target tables post-load audit logs must capture load timestamp, row counts ingested, validation results, and any errors"
+}

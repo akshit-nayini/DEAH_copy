@@ -1,0 +1,19 @@
+# =============================================================
+# config.yaml — OUR TEAM owns this file
+# Core settings for the Synthetic Data Generator
+# Never modified by upstream team or their UI
+# =============================================================
+
+# BigQuery target settings
+bq_project: "your-gcp-project"
+bq_dataset: "your_dataset"
+
+# Generation settings
+num_records: 50
+date_window_days: 15        # to_date = today, from_date = today - N days
+
+# Input — design team's output folder (where mapping CSVs live)
+mapping_source_dir: "core/design/agents/data_model/output"
+
+# Output — where generated SQL files are written
+output_dir: "core/testing/agents/synthetic_data/synthetic_data_generator_mapped_python/output"

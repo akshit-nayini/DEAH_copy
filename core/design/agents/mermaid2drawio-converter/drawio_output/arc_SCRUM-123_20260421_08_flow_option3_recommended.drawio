@@ -1,0 +1,59 @@
+<?xml version="1.0" ?>
+<mxfile host="mermaid2drawio" modified="" agent="mermaid2drawio/1.0" version="21.0.0" type="device">
+  <diagram name="arc_SCRUM-123_20260421_08_flow_option3_recommended" id="3b995af716c3">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="8793a5519c66" value="Data Pipeline Architecture" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fillColor=#E8EAF6;strokeColor=#3949AB;fontSize=16;fontStyle=1;fontColor=#1A237E;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="60" y="10" width="1400" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="dad31f0f177d" value="📥 Ingestion&lt;br/&gt;GCP Datastream (MySQL CDC with backfill, GCS destination)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="720" y="192" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="7f24f9836e2e" value="⚙️ Processing&lt;br/&gt;BigQuery (MERGE SQL for dedup and upsert, schema check SQL via INFORMATION_SCHEMA) + Cloud Composer Airflow operators" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="192" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="9dc9286fe8c9" value="💾 Storage&lt;br/&gt;BigQuery (target employees table + audit_log + schema_registry) + GCS (Datastream landing zone, Avro change event files)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="192" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="459ada45c822" value="📊 Consumption&lt;br/&gt;Consumption" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="1620" y="192" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="4f8550aa55b9" value="📅 Orchestration&lt;br/&gt;Cloud Composer 2 (managed Apache Airflow)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="420" y="192" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="47f0edb43f8f" value="📋 Monitoring&lt;br/&gt;Cloud Monitoring + Cloud Logging + Looker Studio (BigQuery audit_log dashboard)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#999999;strokeWidth=2;fontSize=9;fontStyle=0;align=center;verticalAlign=middle;spacingTop=2;spacingBottom=2;" vertex="1" parent="1">
+          <mxGeometry x="120" y="100" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ad5212d83a02" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=none;verticalAlign=top;aspect=fixed;imageAspect=0;html=1;fontSize=10;fontStyle=1;fontColor=#333333;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSIxMiIgZmlsbD0iIzdCNDJCQyIvPgogIDxjaXJjbGUgY3g9IjM1IiBjeT0iMzUiIHI9IjgiIGZpbGw9IndoaXRlIi8+CiAgPGNpcmNsZSBjeD0iNjUiIGN5PSIzNSIgcj0iOCIgZmlsbD0id2hpdGUiLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjYwIiByPSI4IiBmaWxsPSJ3aGl0ZSIvPgogIDxsaW5lIHgxPSI0MCIgeTE9IjM5IiB4Mj0iNTUiIHkyPSI1NSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPGxpbmUgeDE9IjYwIiB5MT0iMzkiIHgyPSI1NSIgeTI9IjU1IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjMiLz4KICA8cGF0aCBkPSJNNTAgNjh2MTAiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTQ1IDc4bDUgNSA1LTUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPgogIDx0ZXh0IHg9IjUwIiB5PSI4NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzdCNDJCQyIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiI+VEY8L3RleHQ+Cjwvc3ZnPg==" vertex="1" parent="1">
+          <mxGeometry x="195" y="210" width="70" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="9c49dd69a905" value="🔨 IaC&lt;br/&gt;Terraform (GCP provider)" style="text;html=1;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;fillColor=none;strokeColor=none;fontSize=10;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="120" y="284" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="bde8b7a36e02" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="dad31f0f177d" target="7f24f9836e2e" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="6a320e00e381" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="7f24f9836e2e" target="9dc9286fe8c9" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="c0c38177fddd" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#555;strokeWidth=1.5;dashed=0;" edge="1" parent="1" source="9dc9286fe8c9" target="459ada45c822" value="">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="4c09cb7caf62" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="4f8550aa55b9" target="dad31f0f177d" value="schedules">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="fb4a644dfd0e" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="4f8550aa55b9" target="7f24f9836e2e" value="orchestrates">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="b237cd5dd071" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="47f0edb43f8f" target="7f24f9836e2e" value="observes">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="4963b45d100f" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=8;fontColor=#333;strokeColor=#999;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="ad5212d83a02" target="4f8550aa55b9" value="provisions">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

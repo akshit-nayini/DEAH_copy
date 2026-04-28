@@ -1,0 +1,18 @@
+erDiagram
+    stg_employees {
+        INT64 employee_id PK
+        STRING first_name
+        STRING last_name
+        STRING email
+        STRING phone_number
+        DATE hire_date
+        STRING job_id
+        NUMERIC salary
+        NUMERIC commission_pct
+        INT64 manager_id FK
+        INT64 department_id
+        STRING status
+        TIMESTAMP created_date
+        TIMESTAMP updated_date
+    }
+    stg_employees ||--o{ stg_employees : "managed by"

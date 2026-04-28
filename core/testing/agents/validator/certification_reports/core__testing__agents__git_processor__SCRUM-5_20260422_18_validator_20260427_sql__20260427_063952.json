@@ -1,0 +1,237 @@
+{
+  "source_file": "core/testing/agents/git_processor/SCRUM-5_20260422_18_validator_20260427.sql",
+  "language": "sql",
+  "total_lines": 85,
+  "score": 0.0,
+  "certified": false,
+  "timestamp": "2026-04-27T06:39:52.758285+00:00",
+  "validation_file": "SCRUM-5_20260422_18_validator_20260427_06.csv",
+  "file_status": "modified",
+  "pr_number": 121,
+  "branch": "harish_test",
+  "findings_count": 37,
+  "findings": [
+    {
+      "rule": "sql:S2068",
+      "severity": "BLOCKER",
+      "message": "Hardcoded cred",
+      "line": 2
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 8
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 10
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 12
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 14
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 16
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 18
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 20
+    },
+    {
+      "rule": "sql:S2068",
+      "severity": "BLOCKER",
+      "message": "Hardcoded cred",
+      "line": 22
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 24
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 26
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 28
+    },
+    {
+      "rule": "sql:S907",
+      "severity": "CRITICAL",
+      "message": "GOTO",
+      "line": 30
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 32
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 34
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 36
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 38
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 40
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 42
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 44
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 46
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 48
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 50
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 52
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 54
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 56
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 58
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 60
+    },
+    {
+      "rule": "sql:S2153",
+      "severity": "MAJOR",
+      "message": "NOLOCK dirty read",
+      "line": 62
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 64
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 66
+    },
+    {
+      "rule": "sql:S3972",
+      "severity": "BLOCKER",
+      "message": "No WHERE clause",
+      "line": 68
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 70
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 72
+    },
+    {
+      "rule": "sql:S2068",
+      "severity": "BLOCKER",
+      "message": "Hardcoded cred",
+      "line": 74
+    },
+    {
+      "rule": "sql:S2583",
+      "severity": "MAJOR",
+      "message": "SELECT *",
+      "line": 83
+    },
+    {
+      "rule": "sql:S4524",
+      "severity": "MAJOR",
+      "message": "DROP no IF EXISTS",
+      "line": null
+    }
+  ]
+}

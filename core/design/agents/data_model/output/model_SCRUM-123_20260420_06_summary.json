@@ -1,0 +1,159 @@
+{
+  "agent": "data_model",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-123",
+  "source_tables": [
+    "employees"
+  ],
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_employees",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "employee_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique employee identifier. Sourced from MySQL PRI key EMPLOYEE_ID decimal(10,0). Uniqueness enforced post-load per acceptance criteria."
+        },
+        {
+          "name": "first_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee first name. Source max length 50 characters."
+        },
+        {
+          "name": "last_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee last name. Source max length 50 characters."
+        },
+        {
+          "name": "email",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee email address. Source max length 100 characters. NOT NULL in source."
+        },
+        {
+          "name": "phone_number",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Employee phone number. Nullable in source. Source max length 20 characters."
+        },
+        {
+          "name": "hire_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Date the employee was hired. Partition column with MONTH granularity. Supports hire-cohort analytics filtering."
+        },
+        {
+          "name": "job_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Job role identifier. Cluster column (position 2). Source max length 20 characters."
+        },
+        {
+          "name": "salary",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee salary with up to 8 digits and 2 decimal places of precision."
+        },
+        {
+          "name": "commission_pct",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Commission percentage with up to 4 digits and 2 decimal places. Nullable in source."
+        },
+        {
+          "name": "manager_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referential FK to employee_id representing the direct manager. NULL for top-level employees."
+        },
+        {
+          "name": "department_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Department identifier. Cluster column (position 1). Nullable in source."
+        },
+        {
+          "name": "status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee status (e.g. ACTIVE, INACTIVE). Cluster column (position 3). Source max length 10 characters."
+        },
+        {
+          "name": "created_date",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp in the source system. NOT NULL. Can serve as fallback delta key for incremental loads."
+        },
+        {
+          "name": "updated_date",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Record last update timestamp in the source system. Primary delta tracking column for timestamp-based incremental loads. MAX(updated_date) used as high-water mark per load cycle."
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_employees",
+      "from_column": "manager_id",
+      "to_table": "stg_employees",
+      "to_column": "employee_id",
+      "type": "self-referential"
+    }
+  ],
+  "partitioning": {
+    "stg_employees": {
+      "type": "TIME",
+      "column": "hire_date",
+      "granularity": "MONTH"
+    }
+  },
+  "clustering": {
+    "stg_employees": [
+      "department_id",
+      "job_id",
+      "status"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_employees",
+      "to_table": "stg_employees",
+      "type": "many-to-one",
+      "notes": "Many employees may report to one manager. manager_id is a self-referential FK to employee_id. Top-level employees (e.g. CEO) carry NULL in manager_id."
+    }
+  ]
+}

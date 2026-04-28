@@ -1,0 +1,102 @@
+[
+  {
+    "summary": "Fix null pointer exception on user login",
+    "task_heading": "Fix null pointer exception on user login",
+    "description": "When a user attempts to log in with an email that has never been registered, the backend throws a NullPointerException instead of returning a 404 or a user-friendly error message. Steps to reproduce: 1) Navigate to /login, 2) Enter an unregistered email address, 3) Submit the form. Expected: a 404 response with message 'User not found'. Actual: 500 Internal Server Error.",
+    "issuetype": "Bug",
+    "task_type": "bug",
+    "priority": "High",
+    "labels": ["authentication", "error-handling"],
+    "storyPoints": 3,
+    "acceptanceCriteria": ["Login with unregistered email returns HTTP 404", "Error message reads 'User not found'"],
+    "extractionConfidence": 0.95,
+    "temporalMarkers": [],
+    "supersedes": false,
+    "reporter": null,
+    "sprint": null,
+    "fixVersion": null,
+    "location": "Page 3 — Section 2.1 Known Issues",
+    "projectName": "VZ Network Ops Platform",
+    "requirementType": "Bug_Fix",
+    "stakeholderName": "Alice Chen",
+    "objective": "Ensure the login API handles unregistered email addresses gracefully without throwing a server error.",
+    "expectedOutcome": "Login endpoint returns a 404 with a clear user-facing error message instead of a 500 Internal Server Error.",
+    "connectionsDbDetails": "users table in PostgreSQL auth_db schema; /api/v1/login endpoint",
+    "successConditions": [
+      "POST /login with unregistered email returns HTTP 404",
+      "Response body contains message: 'User not found'",
+      "No stack trace is exposed in the response"
+    ],
+    "validationRules": [
+      "Email field must be non-null before DB lookup",
+      "DB query must handle zero-result case without raising exception"
+    ]
+  },
+  {
+    "summary": "Add CSV export to task management dashboard",
+    "task_heading": "Add CSV export to task management dashboard",
+    "description": "As a project manager, I want to be able to export the full task list as a CSV file so that I can analyse task data in spreadsheet tools such as Excel or Google Sheets. The export should include all columns: task_id, task_heading, description, task_type, user_name, status, jira_id, created_at, and updated_at. The file should be named 'tasks_YYYY-MM-DD.csv' and trigger a browser download.",
+    "issuetype": "Story",
+    "task_type": "story",
+    "priority": "Medium",
+    "labels": ["export", "reporting"],
+    "storyPoints": 5,
+    "acceptanceCriteria": ["CSV contains all required columns", "Filename format is tasks_YYYY-MM-DD.csv", "Download triggers automatically in browser"],
+    "extractionConfidence": 0.90,
+    "temporalMarkers": [],
+    "supersedes": false,
+    "reporter": null,
+    "sprint": null,
+    "fixVersion": null,
+    "location": "Page 7 — Section 4.3 Reporting Requirements",
+    "projectName": "VZ Network Ops Platform",
+    "requirementType": "Enhancement",
+    "stakeholderName": "Bob Smith",
+    "objective": "Enable project managers to export task data to CSV for offline analysis in spreadsheet tools.",
+    "expectedOutcome": "A downloadable CSV file containing all task fields is generated and delivered to the user's browser.",
+    "connectionsDbDetails": "tasks table; GET /api/v1/tasks endpoint; browser File API for download trigger",
+    "successConditions": [
+      "Exported CSV contains columns: task_id, task_heading, description, task_type, user_name, status, jira_id, created_at, updated_at",
+      "File is named tasks_YYYY-MM-DD.csv with today's date",
+      "Browser automatically initiates download without page reload"
+    ],
+    "validationRules": [
+      "Empty task list must export a CSV with header row only",
+      "Special characters in text fields must be properly escaped"
+    ]
+  },
+  {
+    "summary": "Migrate database connection pool to async driver",
+    "task_heading": "Migrate database connection pool to async driver",
+    "description": "The current SQLAlchemy setup uses a synchronous connection pool which blocks the event loop under high concurrency. Migrate to asyncpg (for PostgreSQL) or aiosqlite (for SQLite in dev/test) and update all repository functions to use async sessions. Ensure all existing tests pass after migration. This is a prerequisite for the planned horizontal scaling work in Q3.",
+    "issuetype": "Task",
+    "task_type": "task",
+    "priority": "High",
+    "labels": ["database", "performance", "async"],
+    "storyPoints": 8,
+    "acceptanceCriteria": ["All repository functions use async sessions", "Existing test suite passes", "asyncpg used for PostgreSQL, aiosqlite for SQLite"],
+    "extractionConfidence": 0.88,
+    "temporalMarkers": ["Q3"],
+    "supersedes": false,
+    "reporter": null,
+    "sprint": null,
+    "fixVersion": null,
+    "location": "Page 12 — Section 6.1 Technical Debt",
+    "projectName": "VZ Network Ops Platform",
+    "requirementType": "Migration",
+    "stakeholderName": "Dan Lee",
+    "objective": "Remove synchronous DB I/O from the async FastAPI event loop to unblock horizontal scaling in Q3.",
+    "expectedOutcome": "All DB operations use async drivers; no blocking calls remain in the event loop; all tests pass.",
+    "connectionsDbDetails": "PostgreSQL via psycopg2 (current) → asyncpg (target); SQLite via sqlite3 (current) → aiosqlite (target); affects all files in core/requirements_pod/db/",
+    "successConditions": [
+      "All repository functions are async and use AsyncSession",
+      "pytest suite passes with zero failures after migration",
+      "No synchronous DB calls remain in the event loop under load testing"
+    ],
+    "validationRules": [
+      "asyncpg must be used only when DATABASE_URL starts with postgresql://",
+      "aiosqlite must be used only when DATABASE_URL starts with sqlite://",
+      "Connection pool size must remain configurable via environment variable"
+    ]
+  }
+]

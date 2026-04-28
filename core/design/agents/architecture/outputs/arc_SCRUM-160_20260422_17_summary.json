@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "selected_architecture": "Dataflow Apache Beam JDBC Batch Pipeline with BigQuery Direct Write and Cloud Composer Orchestration",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Dataflow (Apache Beam JdbcIO + Flex Templates)",
+    "processing": "BigQuery Stored Procedures (MERGE / sp_mysqltobq_load.sql)",
+    "storage": "Google BigQuery",
+    "orchestration": "Cloud Composer 2",
+    "monitoring": "Cloud Monitoring + Looker Studio",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Apache Beam pipelines running on Dataflow use the JdbcIO connector with the MySQL JDBC driver to read directly from Cloud SQL (agentichub, host: 34.70.79.163, port: 3306) via Cloud SQL Auth Proxy sidecar or VPC Private IP peering within us-central1. For the historical load, a single Dataflow batch job performs a full table scan with no filter predicate, writing all rows in parallel into a BigQuery staging table (employees_staging) in verizon_data_dea. JdbcIO partitioning parameters (partitionColumn, numPartitions, lowerBound, upperBound on employee_id) enable parallel reads. For incremental loads, the same Flex Template is invoked with a WHERE updated_date > last_watermark parameter, reading only changed and new records since the last successful run.",
+    "2. Processing: Upon Dataflow job completion and success status confirmation, Cloud Composer triggers the BigQuery stored procedure sp_mysqltobq_load.sql via BigQueryInsertJobOperator. The stored procedure executes a MERGE into the production table (employees) using employee_id and updated_date as composite merge keys, enforces 60-day partition expiry on the updated_date partition column, queries MySQL row counts via a Cloud SQL federated query or proxy connection for reconciliation, validates schema consistency against a registered schema definition, confirms primary key uniqueness, verifies null and datatype constraints, and writes a complete audit log record (status, record counts, load start and end timestamps, watermark values) to the audit_log table. The Composer DAG enforces a hard task dependency: the incremental load branch is gated by a BigQueryCheckOperator that asserts a PASS status exists in the audit_log for the completed historical load before any incremental Dataflow job is submitted.",
+    "3. Storage: BigQuery (project: verizon-data, dataset: verizon_data_dea) stores staging tables (raw Dataflow output, e.g., employees_staging), production tables (post-MERGE output, e.g., employees), the audit_log table, and a watermark_control table tracking the last_loaded_watermark per table name. Production tables are partitioned by updated_date with a 60-day partition expiry policy enforcing the retention requirement. No intermediate GCS landing is required.",
+    "4. Consumption: A Looker Studio report connects directly to the BigQuery audit_log and reconciliation result tables in verizon_data_dea, presenting load execution history, record counts, data quality check outcomes, and pipeline status to stakeholders led by Yash without engineering involvement. Cloud Monitoring alerting policies are configured on Dataflow job state transitions (JOB_STATE_FAILED), Cloud Composer task failure events, and custom log-based metrics derived from ERROR-severity entries written by the stored procedure to Cloud Logging, with notifications delivered via email or configured PagerDuty channel."
+  ],
+  "key_constraints": [
+    "Perform a one-time full historical load with 100% data completeness; implement scheduled incremental loads hourly or daily per table; support ongoing data growth beyond the initial employees table",
+    "Execute all load logic via stored procedure sp_mysqltobq_load.sql with merge key on employee_id and updated_date",
+    "Block the incremental load pipeline from starting until full historical load validation is confirmed and passes; scheduled incremental loads must run without failures on defined hourly or daily cadence",
+    "Enforce a 60-day data retention policy on the target BigQuery table",
+    "Perform schema validation before each load with mismatch logging and a documented strategy for handling new MySQL columns"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Completeness \u2014 Historical Load Gate",
+      "mitigation": "The Composer DAG must gate the incremental load activation task on a confirmed PASS status written to the audit_log table by the stored procedure, which compares a pre-load MySQL source row count (queried before the Dataflow job starts and stored in a Composer XCom variable) against the BigQuery post-load count. Dataflow job success status alone is insufficient as the gate condition."
+    },
+    {
+      "risk": "Schema Evolution \u2014 New MySQL Columns",
+      "mitigation": "Implement a schema comparison pre-flight task in the Composer DAG that runs INFORMATION_SCHEMA queries against MySQL (via Cloud SQL Auth Proxy) and BigQuery before each Dataflow job submission. Column-count or name mismatches must write an ERROR record to the audit_log table, halt the pipeline, and trigger a Cloud Monitoring alert. The approved runbook must specify whether schema additions trigger an automatic BigQuery ALTER TABLE (low risk for nullable columns) or a manual engineering review gate (required for type changes or NOT NULL additions)."
+    },
+    {
+      "risk": "Source System Load \u2014 Cloud SQL Saturation",
+      "mitigation": "Schedule the historical full load during off-peak hours. Configure JdbcIO numPartitions conservatively (2-4 partitions) for the initial historical run and tune based on observed Cloud SQL CPU utilisation and connection count metrics in Cloud Monitoring. Evaluate promoting to a Cloud SQL read replica if source load becomes a recurring concern as additional tables are onboarded."
+    }
+  ],
+  "scoring_one_liner": "Scored 7.35/10 \u2014 Cost 8, Scalability 8, Complexity 6, Latency 7, Operability 7. Trade-offs accepted: The team accepts the following trade-offs inherent in this recommendation: (1) a Dataflow Flex Template code artefact (Apache Beam pipeline with JDBC) that must be developed, containerised, version-controlled, and maintained; this is offset by the artefact's reuse across all tables and both load modes via parameterisation. (2) A fixed Cloud Composer baseline cost of approximately $300 per month justified by its orchestration, dependency gating, retry management, and SLA alerting capabilities that directly satisfy the stakeholder control requirements. (3) Explicit watermark management logic for incremental loads implemented in the stored procedure and validated by the Composer DAG, in lieu of CDC-based automatic change capture; this is a deliberate design choice appropriate to the batch pattern and provides a deterministic, auditable state model.",
+  "open_blockers": [
+    "Latency SLA not specified: the requirements state hourly or daily cadence per table but do not define a maximum acceptable delay from MySQL commit to BigQuery availability. If a sub-hour data freshness SLA is introduced in future, the batch Dataflow option should be re-evaluated against Datastream CDC replication.",
+    "Table inventory incomplete: only the employees table is confirmed as the initial target. The full list of agentichub tables to be ingested must be agreed with stakeholder Yash and documented in a load inventory matrix before the historical load begins, as each additional table requires a corresponding Composer DAG branch, stored procedure extension, watermark_control entry, and schema definition registration.",
+    "Per-table load cadence not finalised: the requirements permit hourly or daily cadence per table but do not specify which tables require which frequency. A load frequency matrix mapping each table to its required cadence must be signed off before Composer DAG configuration is finalised."
+  ],
+  "ticket_id": "SCRUM-160"
+}

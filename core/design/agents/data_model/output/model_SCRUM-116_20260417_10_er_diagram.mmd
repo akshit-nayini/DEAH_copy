@@ -1,0 +1,42 @@
+erDiagram
+    stg_categories {
+        INT64 category_id PK
+        STRING category_name
+        STRING description
+        INT64 parent_category_id
+        TIMESTAMP created_at
+    }
+    stg_suppliers {
+        INT64 supplier_id PK
+        STRING supplier_name
+        STRING contact_email
+        STRING country
+        BOOL is_active
+        TIMESTAMP created_at
+    }
+    stg_products {
+        INT64 product_id PK
+        STRING product_name
+        STRING sku
+        INT64 category_id FK
+        INT64 supplier_id FK
+        NUMERIC unit_price
+        STRING description
+        BOOL is_active
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    stg_inventory {
+        INT64 inventory_id PK
+        INT64 product_id FK
+        STRING warehouse_code
+        INT64 quantity_on_hand
+        INT64 reorder_level
+        DATE last_restocked_date
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    stg_categories ||--o{ stg_products : "categorises"
+    stg_suppliers ||--o{ stg_products : "supplies"
+    stg_products ||--o{ stg_inventory : "stocked in"
+    stg_categories ||--o{ stg_categories : "parent of"

@@ -1,0 +1,159 @@
+{
+  "agent": "data_model",
+  "project_name": "mysql to bigquery data ingestion pipeline",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-185",
+  "source_tables": [
+    "employees"
+  ],
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_employees",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "employee_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique employee identifier; primary key and first component of the upsert merge key used by sp_mysqltobq_load.sql"
+        },
+        {
+          "name": "first_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee first name; sourced from MySQL FIRST_NAME varchar(50)"
+        },
+        {
+          "name": "last_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee last name; sourced from MySQL LAST_NAME varchar(50)"
+        },
+        {
+          "name": "email",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee email address; sourced from MySQL EMAIL varchar(100)"
+        },
+        {
+          "name": "phone_number",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Employee phone number; nullable; sourced from MySQL PHONE_NUMBER varchar(20)"
+        },
+        {
+          "name": "hire_date",
+          "data_type": "DATE",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Date the employee was hired; sourced from MySQL HIRE_DATE date"
+        },
+        {
+          "name": "job_id",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Job role code; sourced from MySQL JOB_ID varchar(20); second clustering column"
+        },
+        {
+          "name": "salary",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee salary with two decimal places; sourced from MySQL SALARY decimal(8,2)"
+        },
+        {
+          "name": "commission_pct",
+          "data_type": "NUMERIC",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Commission percentage with two decimal places; nullable; sourced from MySQL COMMISSION_PCT decimal(4,2)"
+        },
+        {
+          "name": "manager_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referencing FK to employee_id identifying the employee's direct manager; NULL for top-level managers; sourced from MySQL MANAGER_ID decimal(10,0)"
+        },
+        {
+          "name": "department_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Department identifier; nullable; sourced from MySQL DEPARTMENT_ID decimal(4,0); first clustering column"
+        },
+        {
+          "name": "status",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Employee status (e.g. ACTIVE, INACTIVE); sourced from MySQL STATUS varchar(10); third clustering column"
+        },
+        {
+          "name": "created_date",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp; sourced from MySQL CREATED_DATE timestamp; assumed UTC"
+        },
+        {
+          "name": "updated_date",
+          "data_type": "TIMESTAMP",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Record last-updated timestamp; second component of the upsert merge key; DAY-level partition column driving incremental change-tracking; NULL rows land in the BigQuery __NULL__ partition; sourced from MySQL UPDATED_DATE timestamp; assumed UTC"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_employees",
+      "from_column": "manager_id",
+      "to_table": "stg_employees",
+      "to_column": "employee_id",
+      "type": "self-referencing"
+    }
+  ],
+  "partitioning": {
+    "stg_employees": {
+      "type": "TIME",
+      "column": "updated_date",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_employees": [
+      "department_id",
+      "job_id",
+      "status"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_employees",
+      "to_table": "stg_employees",
+      "type": "many-to-one",
+      "notes": "Many employees may share the same manager; manager_id is a self-referencing FK pointing to employee_id within stg_employees. Employees with no manager (top-level) carry a NULL manager_id."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,notes
+MySQL,EMPLOYEES,EMPLOYEE_ID,"decimal(10,0)",stg_employees,employee_id,INT64,CAST(EMPLOYEE_ID AS INT64),False,True,"Primary key, used for clustering"
+MySQL,EMPLOYEES,FIRST_NAME,varchar(50),stg_employees,first_name,STRING,FIRST_NAME,False,False,Direct mapping to STRING
+MySQL,EMPLOYEES,LAST_NAME,varchar(50),stg_employees,last_name,STRING,LAST_NAME,False,False,Direct mapping to STRING
+MySQL,EMPLOYEES,EMAIL,varchar(100),stg_employees,email,STRING,EMAIL,False,False,Direct mapping to STRING
+MySQL,EMPLOYEES,PHONE_NUMBER,varchar(20),stg_employees,phone_number,STRING,PHONE_NUMBER,False,False,"Direct mapping to STRING, nullable"
+MySQL,EMPLOYEES,HIRE_DATE,date,stg_employees,hire_date,DATE,HIRE_DATE,False,False,Direct mapping to DATE
+MySQL,EMPLOYEES,JOB_ID,varchar(20),stg_employees,job_id,STRING,JOB_ID,False,False,Direct mapping to STRING
+MySQL,EMPLOYEES,SALARY,"decimal(8,2)",stg_employees,salary,NUMERIC,CAST(SALARY AS NUMERIC),False,False,Mapping decimal to NUMERIC type
+MySQL,EMPLOYEES,COMMISSION_PCT,"decimal(4,2)",stg_employees,commission_pct,NUMERIC,CAST(COMMISSION_PCT AS NUMERIC),False,False,"Mapping decimal to NUMERIC type, nullable"
+MySQL,EMPLOYEES,MANAGER_ID,"decimal(10,0)",stg_employees,manager_id,INT64,CAST(MANAGER_ID AS INT64),False,False,"Self-referential foreign key to employee_id, nullable"
+MySQL,EMPLOYEES,DEPARTMENT_ID,"decimal(4,0)",stg_employees,department_id,INT64,CAST(DEPARTMENT_ID AS INT64),False,False,"Foreign key to departments table, nullable"
+MySQL,EMPLOYEES,STATUS,varchar(10),stg_employees,status,STRING,STATUS,False,False,Direct mapping to STRING
+MySQL,EMPLOYEES,CREATED_DATE,timestamp,stg_employees,created_date,TIMESTAMP,CREATED_DATE,True,False,Used for date partitioning
+MySQL,EMPLOYEES,UPDATED_DATE,timestamp,stg_employees,updated_date,TIMESTAMP,UPDATED_DATE,False,False,"Direct mapping to TIMESTAMP, nullable"

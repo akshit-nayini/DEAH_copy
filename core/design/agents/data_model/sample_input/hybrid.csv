@@ -1,0 +1,32 @@
+TABLE_NAME,COLUMN_NAME,DATA_TYPE,LENGTH,PRECISION,SCALE,NULLABLE,PRIMARY_KEY,DEFAULT_VALUE,DESCRIPTION
+orders,order_id,uuid,,,, NOT NULL,YES,,Unique order identifier
+orders,user_id,uuid,,,,NOT NULL,,,Customer who placed the order
+orders,order_status,varchar,30,,,NOT NULL,,,PLACED / CONFIRMED / SHIPPED / DELIVERED / CANCELLED
+orders,total_amount,numeric,,12,2,NOT NULL,,,Total order value including tax
+orders,currency,varchar,3,,,NOT NULL,,USD,ISO 4217 currency code
+orders,shipping_address,varchar,500,,,,,,Delivery address
+orders,payment_method,varchar,50,,,,,,CARD / UPI / WALLET / COD
+orders,order_date,date,,,,NOT NULL,,,Date order was placed
+orders,shipped_at,timestamp,,,,,,, Timestamp when order was shipped
+orders,delivered_at,timestamp,,,,,,, Timestamp when order was delivered
+orders,cancelled_at,timestamp,,,,,,, Timestamp when order was cancelled
+orders,created_at,timestamp,,,,NOT NULL,,,Record creation timestamp
+orders,updated_at,timestamp,,,,NOT NULL,,,Watermark for incremental load
+order_items,item_id,bigint,,,,NOT NULL,YES,,Unique line item identifier
+order_items,order_id,uuid,,,,NOT NULL,,,FK to orders table
+order_items,product_id,uuid,,,,NOT NULL,,,FK to product catalog
+order_items,product_name,varchar,300,,,NOT NULL,,,Product name at time of order
+order_items,quantity,integer,,,,NOT NULL,,,Number of units ordered
+order_items,unit_price,numeric,,10,2,NOT NULL,,,Price per unit at time of order
+order_items,discount_amount,numeric,,8,2,,,0,Discount applied to this line item
+order_items,line_total,numeric,,12,2,NOT NULL,,,quantity x unit_price minus discount
+order_items,created_at,timestamp,,,,NOT NULL,,,Record creation timestamp
+order_items,updated_at,timestamp,,,,NOT NULL,,,Watermark for incremental load
+pubsub.orders.events,event_id,string,36,,,NOT NULL,YES,,UUID from Pub/Sub message attribute
+pubsub.orders.events,order_id,string,36,,,NOT NULL,,,Order this event belongs to
+pubsub.orders.events,user_id,string,36,,,NOT NULL,,,Customer who placed the order
+pubsub.orders.events,event_type,string,50,,,NOT NULL,,,order_placed / order_shipped / order_delivered / order_cancelled
+pubsub.orders.events,event_status,string,30,,,NOT NULL,,,Status at time of event
+pubsub.orders.events,previous_status,string,30,,,,,,Status before this event
+pubsub.orders.events,event_payload,string,,,,,,,JSON string of additional attributes
+pubsub.orders.events,event_timestamp,timestamp,,,,NOT NULL,,,When the event occurred on the source

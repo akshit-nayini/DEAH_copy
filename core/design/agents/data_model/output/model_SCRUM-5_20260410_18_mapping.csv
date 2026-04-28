@@ -1,0 +1,15 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,notes
+MySQL,EMPLOYEES,EMPLOYEE_ID,NUMBER,stg_employees,employee_id,INT64,CAST(EMPLOYEE_ID AS INT64),False,True,Primary key for employee table
+MySQL,EMPLOYEES,FIRST_NAME,VARCHAR2,stg_employees,first_name,STRING,CAST(FIRST_NAME AS STRING),False,False,Employee first name
+MySQL,EMPLOYEES,LAST_NAME,VARCHAR2,stg_employees,last_name,STRING,CAST(LAST_NAME AS STRING),False,False,Employee last name
+MySQL,EMPLOYEES,EMAIL,VARCHAR2,stg_employees,email,STRING,CAST(EMAIL AS STRING),False,False,Employee email address
+MySQL,EMPLOYEES,PHONE_NUMBER,VARCHAR2,stg_employees,phone_number,STRING,CAST(PHONE_NUMBER AS STRING),False,False,Employee phone number
+MySQL,EMPLOYEES,HIRE_DATE,DATE,stg_employees,hire_date,DATE,CAST(HIRE_DATE AS DATE),False,False,Date when employee was hired
+MySQL,EMPLOYEES,JOB_ID,VARCHAR2,stg_employees,job_id,STRING,CAST(JOB_ID AS STRING),False,False,Job identifier
+MySQL,EMPLOYEES,SALARY,NUMBER,stg_employees,salary,NUMERIC,CAST(SALARY AS NUMERIC),False,False,Employee salary
+MySQL,EMPLOYEES,COMMISSION_PCT,NUMBER,stg_employees,commission_pct,NUMERIC,CAST(COMMISSION_PCT AS NUMERIC),False,False,Commission percentage
+MySQL,EMPLOYEES,MANAGER_ID,NUMBER,stg_employees,manager_id,INT64,CAST(MANAGER_ID AS INT64),False,False,Manager employee ID
+MySQL,EMPLOYEES,DEPARTMENT_ID,NUMBER,stg_employees,department_id,INT64,CAST(DEPARTMENT_ID AS INT64),False,True,Department identifier - useful for clustering to optimize departmental queries
+MySQL,EMPLOYEES,STATUS,VARCHAR2,stg_employees,status,STRING,CAST(STATUS AS STRING),False,False,Employee status
+MySQL,EMPLOYEES,CREATED_DATE,TIMESTAMP,stg_employees,created_date,TIMESTAMP,CAST(CREATED_DATE AS TIMESTAMP),True,False,Record creation timestamp - used for time-based partitioning
+MySQL,EMPLOYEES,UPDATED_DATE,TIMESTAMP,stg_employees,updated_date,TIMESTAMP,CAST(UPDATED_DATE AS TIMESTAMP),False,False,Record update timestamp

@@ -1,0 +1,353 @@
+{
+  "agent": "data_model",
+  "project_name": "Product Catalog Analytics Platform",
+  "request_type": "new development",
+  "ticket_id": "SCRUM-116",
+  "source_tables": [
+    "products",
+    "categories",
+    "suppliers",
+    "inventory"
+  ],
+  "source_connections": [
+    {
+      "db_type": "postgres",
+      "database": "product_db",
+      "instance_connection_name": null,
+      "host": "catalog-db.corp.com",
+      "port": "5432",
+      "username": "sa",
+      "source_tables": [
+        "products",
+        "categories",
+        "suppliers",
+        "inventory"
+      ]
+    }
+  ],
+  "target_schema": [
+    {
+      "table_name": "stg_categories",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "category_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique identifier for each product category; primary key for UPSERT operations"
+        },
+        {
+          "name": "category_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Name of the product category"
+        },
+        {
+          "name": "description",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Descriptive text for the category"
+        },
+        {
+          "name": "parent_category_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Self-referencing FK supporting category hierarchy; null for top-level categories"
+        },
+        {
+          "name": "created_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp; used as partition column"
+        }
+      ]
+    },
+    {
+      "table_name": "stg_suppliers",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "supplier_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique identifier for each supplier; primary key for UPSERT operations"
+        },
+        {
+          "name": "supplier_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Name of the supplier"
+        },
+        {
+          "name": "contact_email",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Supplier contact email address"
+        },
+        {
+          "name": "country",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Country where the supplier is based; cluster column for geographic filtering"
+        },
+        {
+          "name": "is_active",
+          "data_type": "BOOL",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Flag indicating whether the supplier is currently active"
+        },
+        {
+          "name": "created_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp; used as partition column"
+        }
+      ]
+    },
+    {
+      "table_name": "stg_products",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "product_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique identifier for each product; primary key for UPSERT operations"
+        },
+        {
+          "name": "product_name",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Name of the product"
+        },
+        {
+          "name": "sku",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Stock keeping unit code; natural business key"
+        },
+        {
+          "name": "category_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "FK to stg_categories; cluster column for category-based product queries"
+        },
+        {
+          "name": "supplier_id",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "FK to stg_suppliers; cluster column for supplier-based product queries"
+        },
+        {
+          "name": "unit_price",
+          "data_type": "NUMERIC",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Per-unit selling price; NUMERIC preserves exact decimal precision"
+        },
+        {
+          "name": "description",
+          "data_type": "STRING",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Product description text"
+        },
+        {
+          "name": "is_active",
+          "data_type": "BOOL",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Flag indicating whether the product is active; cluster column for active/inactive filtering"
+        },
+        {
+          "name": "created_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Last update timestamp; partition column (DAY) and incremental watermark for daily sync"
+        }
+      ]
+    },
+    {
+      "table_name": "stg_inventory",
+      "layer": "staging",
+      "columns": [
+        {
+          "name": "inventory_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": true,
+          "description": "Unique identifier for each inventory record; primary key for UPSERT operations"
+        },
+        {
+          "name": "product_id",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": false,
+          "description": "FK to stg_products; cluster column for product-based inventory queries"
+        },
+        {
+          "name": "warehouse_code",
+          "data_type": "STRING",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Identifier for the warehouse location; cluster column for warehouse-based queries"
+        },
+        {
+          "name": "quantity_on_hand",
+          "data_type": "INT64",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Current stock quantity at the warehouse; key metric for inventory trend analysis"
+        },
+        {
+          "name": "reorder_level",
+          "data_type": "INT64",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Stock level threshold at which a reorder should be triggered"
+        },
+        {
+          "name": "last_restocked_date",
+          "data_type": "DATE",
+          "nullable": true,
+          "primary_key": false,
+          "description": "Date of the most recent restocking event"
+        },
+        {
+          "name": "created_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Record creation timestamp"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "TIMESTAMP",
+          "nullable": false,
+          "primary_key": false,
+          "description": "Last update timestamp; partition column (DAY) and incremental watermark for daily sync"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "stg_products",
+      "from_column": "category_id",
+      "to_table": "stg_categories",
+      "to_column": "category_id",
+      "type": "many-to-one"
+    },
+    {
+      "from_table": "stg_products",
+      "from_column": "supplier_id",
+      "to_table": "stg_suppliers",
+      "to_column": "supplier_id",
+      "type": "many-to-one"
+    },
+    {
+      "from_table": "stg_inventory",
+      "from_column": "product_id",
+      "to_table": "stg_products",
+      "to_column": "product_id",
+      "type": "many-to-one"
+    },
+    {
+      "from_table": "stg_categories",
+      "from_column": "parent_category_id",
+      "to_table": "stg_categories",
+      "to_column": "category_id",
+      "type": "many-to-one"
+    }
+  ],
+  "partitioning": {
+    "stg_categories": {
+      "type": "TIMESTAMP",
+      "column": "created_at",
+      "granularity": "DAY"
+    },
+    "stg_suppliers": {
+      "type": "TIMESTAMP",
+      "column": "created_at",
+      "granularity": "DAY"
+    },
+    "stg_products": {
+      "type": "TIMESTAMP",
+      "column": "updated_at",
+      "granularity": "DAY"
+    },
+    "stg_inventory": {
+      "type": "TIMESTAMP",
+      "column": "updated_at",
+      "granularity": "DAY"
+    }
+  },
+  "clustering": {
+    "stg_categories": [
+      "category_id"
+    ],
+    "stg_suppliers": [
+      "supplier_id",
+      "country"
+    ],
+    "stg_products": [
+      "category_id",
+      "supplier_id",
+      "is_active"
+    ],
+    "stg_inventory": [
+      "product_id",
+      "warehouse_code"
+    ]
+  },
+  "cardinality": [
+    {
+      "from_table": "stg_products",
+      "to_table": "stg_categories",
+      "type": "N:1",
+      "notes": "Many products may belong to one category; category_id is nullable in products allowing uncategorised products"
+    },
+    {
+      "from_table": "stg_products",
+      "to_table": "stg_suppliers",
+      "type": "N:1",
+      "notes": "Many products may be sourced from one supplier; supplier_id is nullable allowing products without an assigned supplier"
+    },
+    {
+      "from_table": "stg_inventory",
+      "to_table": "stg_products",
+      "type": "N:1",
+      "notes": "Multiple inventory records can exist per product across different warehouse locations"
+    },
+    {
+      "from_table": "stg_categories",
+      "to_table": "stg_categories",
+      "type": "N:1",
+      "notes": "Self-referencing hierarchy; parent_category_id is nullable for top-level root categories"
+    }
+  ]
+}

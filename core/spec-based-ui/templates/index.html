@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DE Assistant</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; height: 100vh; display: flex; flex-direction: column; }
+        header { background: #2d2d2d; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; flex-shrink: 0; }
+        header h1 { font-size: 15px; color: #fff; }
+        .logout { color: #888; text-decoration: none; font-size: 12px; }
+        .logout:hover { color: #fff; }
+        .main { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 220px; background: #252526; border-right: 1px solid #444; padding: 16px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
+        .step h3 { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .btn-run { background: #0e639c; color: #fff; border: none; padding: 8px 12px; cursor: pointer; font-family: monospace; font-size: 12px; width: 100%; text-align: left; }
+        .btn-run:hover:not(:disabled) { background: #1177bb; }
+        .btn-run:disabled { background: #3c3c3c; color: #555; cursor: not-allowed; }
+        .divider { border-top: 1px solid #444; }
+        .input-label { font-size: 11px; color: #888; margin-bottom: 6px; }
+        #user-input { width: 100%; background: #3c3c3c; border: 1px solid #555; color: #d4d4d4; padding: 8px; font-family: monospace; font-size: 12px; resize: vertical; min-height: 90px; }
+        .output-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .output-header { padding: 10px 16px; background: #2d2d2d; font-size: 11px; color: #888; border-bottom: 1px solid #444; flex-shrink: 0; }
+        #output-content { flex: 1; overflow-y: auto; padding: 16px; white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
+        #output-content.empty { color: #555; font-style: italic; }
+        #output-content.loading { color: #888; }
+        #output-content.error { color: #f48771; }
+        .output-footer { border-top: 1px solid #444; padding: 12px 16px; background: #252526; flex-shrink: 0; }
+        .action-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn-approve { background: #388a34; color: #fff; border: none; padding: 8px 14px; cursor: pointer; font-family: monospace; font-size: 12px; }
+        .btn-approve:hover:not(:disabled) { background: #4caa45; }
+        .btn-approve:disabled { background: #3c3c3c; color: #555; cursor: not-allowed; }
+        .btn-feedback-toggle { background: #4a3900; color: #ffd700; border: none; padding: 8px 14px; cursor: pointer; font-family: monospace; font-size: 12px; }
+        .btn-feedback-toggle:hover { background: #6a5200; }
+        #status-msg { font-size: 12px; color: #888; }
+        #status-msg.error { color: #f48771; }
+        .feedback-area { display: none; margin-top: 10px; }
+        .feedback-area.visible { display: flex; flex-direction: column; gap: 8px; }
+        #feedback-text { width: 100%; background: #3c3c3c; border: 1px solid #555; color: #d4d4d4; padding: 8px; font-family: monospace; font-size: 12px; resize: vertical; min-height: 60px; }
+        .btn-submit { background: #6a1a1a; color: #ff9999; border: none; padding: 8px 14px; cursor: pointer; font-family: monospace; font-size: 12px; align-self: flex-start; }
+        .btn-submit:hover { background: #8a2a2a; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DE Assistant</h1>
+        <a href="/logout" class="logout">[Logout]</a>
+    </header>
+    <div class="main">
+        <div class="sidebar">
+            <div class="step">
+                <h3>1. Requirements</h3>
+                <button class="btn-run" id="btn-requirements" onclick="runCommand('requirements')">Run ▶</button>
+            </div>
+            <div class="step">
+                <h3>2. Design</h3>
+                <button class="btn-run" id="btn-design" onclick="runCommand('design')"
+                    {% if not requirements_done %}disabled{% endif %}>Run ▶</button>
+            </div>
+            <div class="step">
+                <h3>3. Implement</h3>
+                <button class="btn-run" id="btn-implement" onclick="runCommand('implement')"
+                    {% if not design_done %}disabled{% endif %}>Run ▶</button>
+            </div>
+            <div class="divider"></div>
+            <div>
+                <div class="input-label">Input (for Requirements)</div>
+                <textarea id="user-input" placeholder="Describe your data pipeline..."></textarea>
+            </div>
+        </div>
+        <div class="output-panel">
+            <div class="output-header">Output</div>
+            <div id="output-content" class="{% if last_output %}{% else %}empty{% endif %}">
+                {% if last_output %}{{ last_output }}{% else %}Run a command to see output here.{% endif %}
+            </div>
+            <div class="output-footer">
+                <div class="action-row">
+                    <button class="btn-approve" id="btn-approve" onclick="approveCommand()"
+                        {% if not last_command %}disabled{% endif %}>✓ Approve</button>
+                    <button class="btn-feedback-toggle" onclick="toggleFeedback()">Feedback ▼</button>
+                    <span id="status-msg"></span>
+                </div>
+                <div class="feedback-area" id="feedback-area">
+                    <textarea id="feedback-text" placeholder="Describe what to change..."></textarea>
+                    <button class="btn-submit" onclick="submitFeedback()">Submit Feedback</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentCommand = '{{ last_command or "" }}';
+
+        function setOutput(text, cls) {
+            const el = document.getElementById('output-content');
+            el.textContent = text;
+            el.className = cls || '';
+        }
+        function setStatus(msg, isError) {
+            const el = document.getElementById('status-msg');
+            el.textContent = msg;
+            el.className = isError ? 'error' : '';
+        }
+
+        function runCommand(command) {
+            if (command === 'requirements') {
+                const input = document.getElementById('user-input').value.trim();
+                if (!input) { setStatus('Please enter a requirement in the input box.', true); return; }
+            }
+            setOutput('Running ' + command + '...', 'loading');
+            document.getElementById('btn-approve').disabled = true;
+            currentCommand = command;
+
+            fetch('/run/' + command, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({input: document.getElementById('user-input').value})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) { setOutput(data.error, 'error'); setStatus(''); }
+                else {
+                    setOutput(data.output, '');
+                    document.getElementById('btn-approve').disabled = false;
+                    setStatus('Saved to .temp/ — review then approve or give feedback.');
+                }
+            })
+            .catch(() => setOutput('Network error — please try again.', 'error'));
+        }
+
+        function approveCommand() {
+            if (!currentCommand) return;
+            fetch('/approve/' + currentCommand, {method: 'POST'})
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) { setStatus(data.error, true); }
+                else {
+                    setStatus('Approved and saved to specs/.');
+                    document.getElementById('btn-approve').disabled = true;
+                    if (currentCommand === 'requirements') document.getElementById('btn-design').disabled = false;
+                    if (currentCommand === 'design') document.getElementById('btn-implement').disabled = false;
+                }
+            });
+        }
+
+        function toggleFeedback() {
+            document.getElementById('feedback-area').classList.toggle('visible');
+        }
+
+        function submitFeedback() {
+            const text = document.getElementById('feedback-text').value.trim();
+            if (!text) { setStatus('Please enter feedback before submitting.', true); return; }
+            setOutput('Regenerating...', 'loading');
+            document.getElementById('btn-approve').disabled = true;
+
+            fetch('/feedback/' + currentCommand, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({feedback: text})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) { setOutput(data.error, 'error'); }
+                else {
+                    setOutput(data.output, '');
+                    document.getElementById('feedback-text').value = '';
+                    document.getElementById('feedback-area').classList.remove('visible');
+                    document.getElementById('btn-approve').disabled = false;
+                    setStatus('Regenerated — review then approve or give more feedback.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

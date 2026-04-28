@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "mysql to bigquery data ingestion pipeline",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Run Jobs + Cloud Composer + BigQuery Stored Procedure MERGE (Recommended)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Run Jobs + Cloud SQL Auth Proxy (Python 3.11, SQLAlchemy, PyMySQL, PyArrow)",
+    "processing": "Cloud Run Jobs (schema validation and data quality) + BigQuery MERGE via sp_mysqltobq_load.sql stored procedure",
+    "storage": "BigQuery (date-partitioned, clustered on employee_id) + GCS (Parquet staging, 60-day lifecycle)",
+    "orchestration": "Cloud Composer (Apache Airflow 2.x) with ExternalTaskSensor gating incremental DAG on historical load validation SUCCESS state",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio (stakeholder audit dashboard connected to pipeline_audit_log BigQuery table)",
+    "iac": "Terraform (hashicorp/google provider)"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud SQL MySQL (verizon-data:us-central1:mysql-druid-metadatastore, agentichub.employees, host 34.70.79.163:3306) \u2192 Cloud SQL Auth Proxy (Unix socket, IAM authentication) \u2192 Cloud Run Job (Python, SQLAlchemy and PyMySQL) reads full snapshot for historical load or timestamp and PK watermark-filtered delta for incremental runs; records serialized to Parquet via PyArrow and uploaded to GCS staging bucket partitioned by load_date",
+    "2. Processing: Cloud Run Job (validation stage) executes: (1) pre-load schema validation covering type mismatch detection, null constraint inconsistencies, and field mapping gaps between MySQL and BigQuery schemas; (2) row count reconciliation against MySQL source count for the extraction window; (3) PK uniqueness check on employee_id in staging data; (4) new-column detection with hold-and-alert policy; validated Parquet files loaded to BigQuery staging table via BigQuery Storage Write API; Cloud Composer triggers BigQuery stored procedure sp_mysqltobq_load.sql executing MERGE into production table using composite merge key employee_id and updated_date",
+    "3. Storage: GCS staging bucket (Parquet files, 60-day object lifecycle expiration policy aligned with retention SLA) \u2192 BigQuery production table agentichub.employees (date-partitioned on updated_date, clustered on employee_id); BigQuery pipeline_audit_log table records execution_timestamp, job_id, records_extracted, records_merged, validation_status, schema_diff_detected, and error_details for every run",
+    "4. Consumption: BigQuery production tables consumed by analytics team via Looker Studio pre-built stakeholder dashboard showing load status, record counts, last refresh timestamp, and validation pass or fail per run without engineering involvement; SQL clients for ad-hoc queries; Cloud Monitoring alerts on job failure or schema drift; Cloud Logging provides full audit trail accessible to stakeholders"
+  ],
+  "key_constraints": [
+    "functional_requirements[3]: Gate incremental loads so they cannot begin until the full historical load has been validated and confirmed complete",
+    "constraints.technical_limitations: Incremental loads must not begin until historical load validation has passed; change tracking must use timestamps or primary keys \u2014 full table re-scans are not permitted",
+    "assumptions[1]: Merge key for upsert/merge operations is employee_id and updated_date, executed via stored procedure sp_mysqltobq_load.sql; functional_requirements[9]: Apply merge key logic using employee_id and updated_date for upsert/merge operations via stored procedure sp_mysqltobq_load.sql",
+    "non_functional.sla: data retention period is 60 days; assumptions[2]: Data retention period is 60 days",
+    "functional_requirements[4]: Implement pre-load schema validation that detects type mismatches, null handling inconsistencies, and field mapping issues between MySQL and BigQuery schemas"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Pre-load schema validation in the Cloud Run Job detects type mismatches and missing fields before every load execution; new-column detection triggers the hold-and-alert policy halting the load and notifying the pipeline owner via Cloud Monitoring; BigQuery schema definitions are managed as Terraform resources enabling controlled schema migration through code review and approval workflows"
+    },
+    {
+      "risk": "Historical Load Data Loss",
+      "mitigation": "Implement idempotent chunked extraction partitioned by employee_id range with per-chunk row count validation; store chunk completion state in a BigQuery pipeline_control_log table keyed by chunk range and load_run_id; design re-run logic to resume from the last successfully completed chunk, avoiding re-loading completed ranges and preventing duplicate data"
+    },
+    {
+      "risk": "Watermark Accuracy and Incremental Completeness",
+      "mitigation": "Confirm MySQL-side application enforcement of updated_date on all write paths before go-live; implement a weekly reconciliation Cloud Run Job that compares BigQuery and MySQL total record counts and a random sample checksum; alert via Cloud Monitoring when discrepancy exceeds a configurable threshold such as 0.1 percent of total row count"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.75/10 \u2014 Cost 8, Scalability 7, Complexity 8, Latency 8, Operability 8. Trade-offs accepted: Three trade-offs are explicitly accepted: (1) Slightly lower theoretical horizontal scalability ceiling compared to Dataflow \u2014 acceptable because 1 GB per month growth is well within Cloud Run memory limits and a pre-implemented employee_id range chunking pattern covers edge cases through at least year two. (2) No real-time CDC capability compared to Datastream \u2014 acceptable because the requirements explicitly define hourly and daily batch cadence with no sub-minute latency SLA, and no functional requirement references near-real-time freshness. (3) Custom Python ETL code requires testing and maintenance \u2014 mitigated by Python's broad ecosystem familiarity within GCP data engineering practices, Cloud Run's serverless operational model eliminating infrastructure maintenance, and the small codebase surface area for a single-table pipeline.",
+  "open_blockers": [
+    "Latency SLA not specified: no maximum acceptable data lag is defined for either hourly or daily cadence tables. If any table requires near-real-time freshness of under five minutes, Option 3 Datastream should be revisited and the pattern_type classification updated from batch to hybrid. Confirm acceptable lag per table with Shruthi B before architecture is finalized.",
+    "Table expansion scope: requirements identify a single source table agentichub.employees. If additional tables in agentichub or other databases on the Cloud SQL instance will be onboarded, the architecture must account for per-table watermark column identification, schema validation configuration registries, Composer DAG parameterization by table, and a table onboarding runbook. Confirm the complete agreed-upon table list before implementation begins.",
+    "Data sensitivity classification: no classification such as PII, PCI-DSS scope, or internal confidential has been provided for the employees table. If employee records contain personally identifiable information including names, contact details, national identifiers, or compensation data, CMEK encryption, BigQuery column-level security policies, and a VPC Service Controls perimeter are required and must be designed before the pipeline is deployed to production."
+  ],
+  "ticket_id": "SCRUM-185"
+}

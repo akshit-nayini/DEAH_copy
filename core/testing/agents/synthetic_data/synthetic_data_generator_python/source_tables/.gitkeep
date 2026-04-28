@@ -1,0 +1,3 @@
+# This file keeps the source_tables/ folder tracked by Git.
+# Designers drop their source CSV/JSON files here.
+# When merged to main, the GitHub Actions workflow auto-processes them.

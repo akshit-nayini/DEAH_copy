@@ -1,0 +1,19 @@
+erDiagram
+    stg_employees {
+        INT64 employee_id PK "NOT NULL"
+        STRING first_name "NOT NULL"
+        STRING last_name "NOT NULL"
+        STRING email "NOT NULL"
+        STRING phone_number "NULL"
+        DATE hire_date "NOT NULL"
+        STRING job_id "NOT NULL"
+        NUMERIC salary "NOT NULL"
+        NUMERIC commission_pct "NULL"
+        INT64 manager_id "NULL"
+        INT64 department_id "NULL"
+        STRING status "NOT NULL"
+        TIMESTAMP created_date "NOT NULL"
+        TIMESTAMP updated_date "NULL"
+    }
+    
+    stg_employees }|--|| stg_employees : "manager_id to employee_id"

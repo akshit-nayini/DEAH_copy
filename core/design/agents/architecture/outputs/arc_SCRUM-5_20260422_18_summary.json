@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "Customer360",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer + Dataflow (Apache Beam) + BigQuery",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Google Cloud Dataflow (JDBC MySQL Source Connector)",
+    "processing": "Google Cloud Dataflow (Apache Beam SDK)",
+    "storage": "Google Cloud Storage + BigQuery",
+    "orchestration": "Cloud Composer 2 (Apache Airflow)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Dataflow Job Metrics",
+    "iac": "Terraform (hashicorp/google provider)"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer (Airflow) triggers an hourly DAG (cron: 0 * * * *); a Dataflow job reads the EMPLOYEES table from MySQL (host: 34.70.79.163:3306, instance: verizon-data:us-central1:mysql-druid-metadatastore) via the JDBC connector, writing raw records to a GCS staging bucket.",
+    "2. Processing: Dataflow Apache Beam pipeline applies schema validation, type casting, null handling, and watermark-based incremental load logic before writing structured records to BigQuery via the native BigQuery I/O connector.",
+    "3. Storage: GCS bucket serves as the raw landing zone (Avro/Parquet); BigQuery dataset (customer360_dev) hosts the cleansed and conformed EMPLOYEES table as the analytical serving layer.",
+    "4. Consumption: BigQuery serves ad-hoc analytics queries, Looker Studio dashboards, and downstream Customer360 data products."
+  ],
+  "key_constraints": [
+    "technology.preferred_tools",
+    "classification.ingestion_type + non_functional.latency + data_requirements.volume",
+    "technology.stack + objective",
+    "data_requirements.frequency + non_functional.latency",
+    "technology.environment"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Security \u2014 Credential Exposure",
+      "mitigation": "Store all MySQL credentials exclusively in Google Secret Manager. Reference secrets at runtime via Airflow Connections backed by Secret Manager or direct Secret Manager SDK calls in Dataflow pipeline code. Rotate the 'sa' password before Dev pipeline deployment and enforce the principle of least privilege on the MySQL user account."
+    },
+    {
+      "risk": "Network Connectivity",
+      "mitigation": "Confirm whether 34.70.79.163 is a Cloud SQL instance or an external host. For Cloud SQL: use the Cloud SQL Connector library (recommended) or Cloud SQL Auth Proxy sidecar pattern with Dataflow. For external hosts: establish VPC peering or Cloud Interconnect with least-privilege firewall rules scoped to Dataflow worker subnet CIDR ranges."
+    },
+    {
+      "risk": "Data Quality",
+      "mitigation": "Implement row-count reconciliation (source COUNT(*) vs. BigQuery row count post-load), null checks on primary key and critical columns of the EMPLOYEES table, and schema drift detection in the Dataflow pipeline. Publish pipeline quality metrics to Cloud Monitoring and configure alerting on anomaly thresholds before Dev sign-off."
+    }
+  ],
+  "scoring_one_liner": "Scored 7.55/10 \u2014 Cost 7, Scalability 9, Complexity 6, Latency 8, Operability 8. Trade-offs accepted: Moderate complexity (6/10) is accepted \u2014 Beam pipeline development requires specific skills, but this is a well-documented GCP reference pattern with extensive community support and Google-provided JDBC connector examples. The 2-3 minute Dataflow startup overhead is accepted given the < 1 hour SLA provides ample headroom for processing 10 GB at auto-scaled throughput.",
+  "open_blockers": [
+    "Is the MySQL host (34.70.79.163) a Cloud SQL instance \u2014 as suggested by the instance_connection_name (verizon-data:us-central1:mysql-druid-metadatastore) \u2014 or an external on-premise or self-hosted instance? This is a critical blocker: the answer determines the network connectivity pattern (Cloud SQL Connector library vs. VPC peering / firewall allowlisting).",
+    "Does the EMPLOYEES table contain a reliable incremental load column (e.g. updated_at TIMESTAMP, created_at DATETIME, or an auto-increment ID) to support delta/CDC-style extraction, or is full-table extraction required on each hourly run? This directly impacts pipeline design, BigQuery write mode (WRITE_APPEND vs. WRITE_TRUNCATE), and storage cost.",
+    "What are the data sensitivity and access control requirements for the EMPLOYEES table? PII handling obligations, column-level BigQuery encryption, row-level security policies, and VPC Service Controls perimeter requirements are unspecified and must be addressed before the Dev pipeline handles real employee data."
+  ],
+  "ticket_id": "SCRUM-5"
+}

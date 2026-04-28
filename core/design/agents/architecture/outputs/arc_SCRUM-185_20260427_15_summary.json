@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "mysql to bigquery data ingestion pipeline",
+  "request_type": "new development",
+  "selected_architecture": "Google Datastream + BigQuery Direct (Managed CDC Replication with Composer Gating)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Google Datastream (MySQL binary log CDC + full backfill to BigQuery via GCS)",
+    "processing": "BigQuery SQL (MERGE / DML procedures + SQL-based data quality assertions)",
+    "storage": "Google Cloud Storage (Datastream staging buffer) + BigQuery (analytical store)",
+    "orchestration": "Cloud Composer 2 (Apache Airflow 2.x)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio (stakeholder audit dashboard)",
+    "iac": "Terraform (hashicorp/google provider)"
+  },
+  "flow_steps": [
+    "1. Ingestion: Google Datastream connects to the MySQL source via private connectivity (VPC peering or Cloud SQL Proxy); an initial full-backfill stream replicates all historical rows through GCS staging into BigQuery target tables; ongoing CDC events are captured from the MySQL binary log and written continuously to BigQuery; Cloud Composer enforces the mandatory gate by holding the Datastream stream in PAUSED state until a dedicated Airflow validation task confirms historical load completeness and correctness, at which point the stream is resumed and incremental replication begins",
+    "2. Processing: BigQuery natively receives and applies Datastream change events (INSERT, UPDATE, DELETE) to target tables using BigQuery's built-in change data handling; Cloud Composer triggers scheduled BigQuery SQL MERGE procedures to reconcile upserts and propagate hard-deletes within defined batch windows (hourly or daily per table); post-MERGE data quality routines \u2014 row count reconciliation against source, PK uniqueness assertion, and data type constraint checks \u2014 are implemented as BigQuery SQL procedures invoked by Airflow after each incremental window closes; schema validation is executed as a pre-load SQL assertion comparing INFORMATION_SCHEMA metadata between source (via Datastream schema registry) and target",
+    "3. Storage: GCS bucket serves as the Datastream backfill staging zone and durable replay buffer for CDC events; BigQuery stores all historical and incremental data in date-partitioned, PK-clustered tables per source table; a dedicated BigQuery audit dataset captures a per-execution audit record including run start, run end, source row count, target row count, validation pass or fail status, error detail, and the triggering Airflow run ID",
+    "4. Consumption: Analytics team queries BigQuery target tables directly via SQL clients, Looker, or connected BI tools; a Looker Studio dashboard connected to the BigQuery audit dataset provides stakeholder-facing load health visibility \u2014 showing per-table status, row counts, last successful run, and any validation failures \u2014 without requiring engineering involvement; BigQuery INFORMATION_SCHEMA and Data Catalog expose schema lineage and table metadata for governance"
+  ],
+  "key_constraints": [
+    "technology.stack: [MySQL, Google BigQuery]; technology.cloud_or_onprem: cloud",
+    "data_requirements.frequency: daily schedule interval; hourly or daily per-table configuration for incremental loads",
+    "functional_requirements[0]: Perform a one-time full historical load from MySQL to BigQuery for all identified tables without data loss; objective: including a one-time full historical load and ongoing scheduled incremental loads",
+    "functional_requirements[3]: Gate incremental loads so they cannot begin until the full historical load has been validated and confirmed complete; constraints.technical_limitations: Incremental loads must not begin until historical load validation has passed",
+    "functional_requirements[2]: Use timestamp-based or primary key-based change tracking to identify and load only new or changed records; constraints.technical_limitations: full table re-scans are not permitted"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Volume Uncertainty",
+      "mitigation": "Conduct a table-level row count and size profiling exercise (SELECT COUNT(*), AVG(row_length) from INFORMATION_SCHEMA) against the MySQL source before pipeline design is finalised. Use results to validate tool selection, submit Datastream and BigQuery quota increase requests, and establish GCP Billing budget alerts with automated notification thresholds."
+    },
+    {
+      "risk": "MySQL Source Connectivity",
+      "mitigation": "Engage network and DBA teams to confirm and document the connectivity path (VPC peering, Cloud VPN, or Cloud SQL Proxy) before sprint planning begins. Validate the connection with a test Datastream stream or JDBC probe in a non-production GCP environment. Include network provisioning as a gating prerequisite in the project plan."
+    },
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Configure Datastream schema evolution policy to alert-and-hold on new column detection, preventing silent propagation of unanticipated changes. Store schema snapshots in a BigQuery metadata table after each load cycle and implement a Composer-triggered drift detection task that compares current INFORMATION_SCHEMA against the baseline snapshot. Define an explicit organisational policy for new-column handling (alert-and-hold vs. auto-map-with-review) and document it in the runbook."
+    }
+  ],
+  "scoring_one_liner": "Scored 8.55/10 \u2014 Cost 8, Scalability 9, Complexity 9, Latency 8, Operability 9. Trade-offs accepted: MySQL binary logging must be enabled with ROW format prior to Datastream configuration \u2014 a prerequisite DBA action that must be planned into the project timeline. Datastream's continuous CDC model is over-provisioned relative to a pure daily batch SLA but does not introduce reliability or cost risk at moderate change volumes; stream pause scheduling between batch windows can be added to optimise cost. BigQuery MERGE query costs for large tables with high update rates must be monitored and may require partition-predicate optimisation after the first production load cycle.",
+  "open_blockers": [
+    "What is the estimated total data volume for the historical load (GB or TB in aggregate), and what is the estimated daily incremental change volume (rows and GB) per table? This is required to validate Datastream quota sufficiency, set BigQuery slot reservation levels, size GCS staging buckets, and produce an accurate monthly cost estimate.",
+    "Is MySQL binary logging (binlog) currently enabled with ROW format on the source instance? If not, is a DBA-coordinated change request and potential MySQL service restart feasible before project kickoff? This is a hard prerequisite for the recommended Datastream-based architecture.",
+    "What are the network connectivity details for the MySQL source host \u2014 specifically, is private connectivity from the GCP project to the MySQL instance already established via VPC peering, Cloud VPN, or Cloud SQL Proxy, or must this be provisioned as part of the project scope?"
+  ],
+  "ticket_id": "SCRUM-185"
+}

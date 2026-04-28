@@ -1,0 +1,18 @@
+{
+  "products": [],
+  "pods": {
+    "requirements": "http://35.209.107.68:8001",
+    "design":       "http://35.209.107.68:8082",
+    "development":  "http://35.209.107.68:8000"
+  },
+  "ai": { "apiKey": "", "model": "" },
+  "users": [
+    {
+      "id": "akshit",
+      "name": "Akshit Nayini",
+      "username": "akshit",
+      "password": "admin",
+      "roles": ["admin", "developer"]
+    }
+  ]
+}

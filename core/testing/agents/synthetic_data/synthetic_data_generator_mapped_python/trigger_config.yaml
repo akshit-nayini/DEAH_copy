@@ -1,0 +1,11 @@
+# =============================================================
+# trigger_config.yaml — UPSTREAM TEAM owns this file
+# This file is updated by the upstream UI when the user
+# enters a mapping file name and hits "Generate Synthetic Data"
+# =============================================================
+
+# List of mapping CSV file names to process
+# These are filenames only (not full paths) — the full path
+# is resolved using mapping_source_dir from config.yaml
+mapping_files:
+  - "model_SCRUM-5_20260413_23_mapping.csv"

@@ -1,0 +1,41 @@
+%% Architecture Flow: Product Catalog Analytics Platform | GCP | batch
+flowchart LR
+
+    subgraph rec["⭐ Option 1: Cloud Composer Native Batch Pipeline (PostgresHook → GCS → BigQuery MERGE) — Recommended"]
+        direction LR
+        I1["📥 Ingestion<br/>Cloud Composer 2 — Airflow PostgresHook + PythonOperator (psycopg2 chunked reads)"]
+        P1["⚙️ Processing<br/>BigQuery — LOAD JOB + MERGE SQL via BigQueryInsertJobOperator"]
+        S1["💾 Storage<br/>GCS (Parquet staging, 7-day lifecycle) + BigQuery verizon-data.verizon_catalog_deah"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Composer 2"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring + Cloud Logging + Airflow UI (DAG/task-level SLA callbacks)"]
+        IaC1["🔨 IaC<br/>Terraform"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o2["Option 2: Cloud Composer + Dataflow (Apache Beam JdbcIO) → BigQuery"]
+        direction LR
+        I2["📥 Ingestion<br/>Cloud Composer 2 (DataflowStartFlexTemplateOperator) + Apache Beam JdbcIO (PostgreSQL JDBC driver)"]
+        P2["⚙️ Processing<br/>Dataflow (Apache Beam Runner v2) + BigQuery MERGE SQL via BigQueryInsertJobOperator"]
+        S2["💾 Storage<br/>GCS (Dataflow temp/shuffle) + BigQuery verizon-data.verizon_catalog_deah + transient staging dataset"]
+        C2["📊 Consumption<br/>Consumption"]
+        I2 --> P2 --> S2 --> C2
+    end
+
+    subgraph o3["Option 3: Cloud Composer + Dataproc Ephemeral PySpark Cluster → BigQuery"]
+        direction LR
+        I3["📥 Ingestion<br/>Cloud Composer 2 (DataprocCreateClusterOperator + DataprocSubmitJobOperator) + PySpark JDBC (PostgreSQL JDBC driver)"]
+        P3["⚙️ Processing<br/>Dataproc PySpark (ephemeral cluster) + BigQuery LOAD JOB + MERGE SQL via BigQueryInsertJobOperator"]
+        S3["💾 Storage<br/>GCS (Parquet intermediate, Spark staging) + BigQuery verizon-data.verizon_catalog_deah"]
+        C3["📊 Consumption<br/>Consumption"]
+        I3 --> P3 --> S3 --> C3
+    end
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I2,P2,S2,C2,I3,P3,S3,C3 rejected

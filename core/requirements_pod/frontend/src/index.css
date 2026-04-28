@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Global background ──────────────────────────────────────────────────────── */
+body {
+  background-color: #f8f9fc;
+}
+
+/* ── App background ─────────────────────────────────────────────────────────── */
+.app-bg {
+  background-color: #f8f9fc;
+}
+
+/* ── Header — clean light style ─────────────────────────────────────────────── */
+.header-gradient {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Brand icon ─────────────────────────────────────────────────────────────── */
+.brand-icon {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* ── Active tab ─────────────────────────────────────────────────────────────── */
+.tab-active {
+  background-color: #8b5cf6;
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+/* ── Card headers ───────────────────────────────────────────────────────────── */
+.card-header-indigo {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card-header-violet {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Staging area ───────────────────────────────────────────────────────────── */
+.staging-header {
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Drop zone ──────────────────────────────────────────────────────────────── */
+.dropzone-hover {
+  background: #f5f3ff;
+  border-color: #8b5cf6;
+}
+
+/* ── Table header ───────────────────────────────────────────────────────────── */
+.table-header-row {
+  background: #f9fafb;
+}
+
+/* ── Modal header — light style ─────────────────────────────────────────────── */
+.modal-header-gradient {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Extract buttons ────────────────────────────────────────────────────────── */
+.btn-extract {
+  background-color: #8b5cf6;
+  color: white;
+  transition: all 0.15s ease;
+}
+
+.btn-extract:hover:not(:disabled) {
+  background-color: #7c3aed;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.btn-merge {
+  background-color: #7c3aed;
+  color: white;
+  transition: all 0.15s ease;
+}
+
+.btn-merge:hover:not(:disabled) {
+  background-color: #6d28d9;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+/* ── Custom scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

@@ -1,0 +1,30 @@
+# Core dependencies
+pydantic>=2.0,<3.0
+pyyaml>=6.0
+typer>=0.9.0
+structlog>=23.0
+
+# API server (MVP-1 Sprint 1)
+fastapi>=0.110.0
+uvicorn>=0.27.0
+
+# SQL parsing & validation
+sqlglot>=20.0
+sqlfluff>=3.0
+
+# LLM integration
+anthropic>=0.39.0
+
+# Prompt templating
+jinja2>=3.1
+
+# Secret detection (Self-Review)
+detect-secrets>=1.4
+
+# Testing
+pytest>=8.0
+pytest-asyncio>=0.23
+pytest-cov>=4.0
+
+# Dev tools
+ruff>=0.3.0

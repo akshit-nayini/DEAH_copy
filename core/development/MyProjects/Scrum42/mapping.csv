@@ -1,0 +1,36 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,is_pii,pii_category,scd_role,notes
+
+Oracle,EMPLOYEES,EMPLOYEE_ID,NUMBER(10),employees,employee_id,INT64,CAST(EMPLOYEE_ID AS INT64),False,True,False,,natural_key,Primary key — cluster key for merge lookups
+
+Oracle,EMPLOYEES,FIRST_NAME,VARCHAR2(50),employees,first_name,STRING,TRIM(FIRST_NAME),False,False,True,name,,
+
+Oracle,EMPLOYEES,LAST_NAME,VARCHAR2(50),employees,last_name,STRING,TRIM(LAST_NAME),False,False,True,name,,
+
+Oracle,EMPLOYEES,EMAIL,VARCHAR2(100),employees,email,STRING,TRIM(EMAIL),False,False,True,email,,
+
+Oracle,EMPLOYEES,PHONE_NUMBER,VARCHAR2(20),employees,phone_number,STRING,TRIM(PHONE_NUMBER),False,False,True,phone,,
+
+Oracle,EMPLOYEES,HIRE_DATE,DATE,employees,hire_date,DATE,CAST(HIRE_DATE AS DATE),True,False,False,,,Date column — partition key for time-range pruning
+
+Oracle,EMPLOYEES,JOB_ID,VARCHAR2(20),employees,job_id,STRING,TRIM(JOB_ID),False,False,False,,,
+
+Oracle,EMPLOYEES,SALARY,"NUMBER(8,2)",employees,salary,NUMERIC,CAST(SALARY AS NUMERIC),False,False,True,financial,,
+
+Oracle,EMPLOYEES,COMMISSION_PCT,"NUMBER(4,2)",employees,commission_pct,NUMERIC,CAST(COMMISSION_PCT AS NUMERIC),False,False,True,financial,,
+
+Oracle,EMPLOYEES,MANAGER_ID,NUMBER(10),employees,manager_id,INT64,CAST(MANAGER_ID AS INT64),False,False,False,,,
+
+Oracle,EMPLOYEES,DEPARTMENT_ID,NUMBER(4),employees,department_id,INT64,CAST(DEPARTMENT_ID AS INT64),False,False,False,,,
+
+Oracle,EMPLOYEES,STATUS,VARCHAR2(10),employees,status,STRING,TRIM(STATUS),False,False,False,,,
+
+Oracle,EMPLOYEES,CREATED_DATE,TIMESTAMP,employees,created_date,TIMESTAMP,CAST(CREATED_DATE AS TIMESTAMP),True,False,False,,metadata,Date column — partition key for time-range pruning
+
+Oracle,EMPLOYEES,UPDATED_DATE,TIMESTAMP,employees,updated_date,TIMESTAMP,CAST(UPDATED_DATE AS TIMESTAMP),False,False,False,,metadata,
+
+derived,derived,derived,N/A,employees,source_system,STRING,'Oracle',False,False,False,,metadata,Source system identifier
+
+derived,derived,derived,N/A,employees,batch_id,INT64,CURRENT_BATCH_ID(),False,False,False,,metadata,Batch run identifier
+
+derived,derived,derived,N/A,employees,load_timestamp,TIMESTAMP,CURRENT_TIMESTAMP(),False,False,False,,metadata,Row load timestamp
+

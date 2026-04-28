@@ -1,0 +1,30 @@
+TABLE_NAME,COLUMN_NAME,DATA_TYPE,LENGTH,PRECISION,SCALE,NULLABLE,PRIMARY_KEY,DEFAULT_VALUE,DESCRIPTION
+CATEGORIES,CATEGORY_ID,INTEGER,,,, NOT NULL,YES,,Unique identifier for category
+CATEGORIES,CATEGORY_NAME,VARCHAR,100,,,NOT NULL,,,Name of the product category
+CATEGORIES,DESCRIPTION,TEXT,,,,,,, Category description
+CATEGORIES,PARENT_CATEGORY_ID,INTEGER,,,,,,,Parent category for hierarchy
+CATEGORIES,CREATED_AT,TIMESTAMP,,,,NOT NULL,,,Record creation timestamp
+SUPPLIERS,SUPPLIER_ID,INTEGER,,,,NOT NULL,YES,,Unique identifier for supplier
+SUPPLIERS,SUPPLIER_NAME,VARCHAR,200,,,NOT NULL,,,Supplier company name
+SUPPLIERS,CONTACT_EMAIL,VARCHAR,150,,,,,, Primary contact email
+SUPPLIERS,COUNTRY,VARCHAR,100,,,,,,Country of supplier
+SUPPLIERS,IS_ACTIVE,BOOLEAN,,,, NOT NULL,,TRUE,Whether supplier is currently active
+SUPPLIERS,CREATED_AT,TIMESTAMP,,,,NOT NULL,,,Record creation timestamp
+PRODUCTS,PRODUCT_ID,INTEGER,,,,NOT NULL,YES,,Unique identifier for each product
+PRODUCTS,PRODUCT_NAME,VARCHAR,300,,,NOT NULL,,,Name of the product
+PRODUCTS,SKU,VARCHAR,50,,,NOT NULL,,,Stock keeping unit code
+PRODUCTS,CATEGORY_ID,INTEGER,,,,,,,FK to categories table
+PRODUCTS,SUPPLIER_ID,INTEGER,,,,,,,FK to suppliers table
+PRODUCTS,UNIT_PRICE,NUMERIC,,10,2,NOT NULL,,,Price per unit
+PRODUCTS,DESCRIPTION,TEXT,,,,,,,Product description
+PRODUCTS,IS_ACTIVE,BOOLEAN,,,,NOT NULL,,TRUE,Whether product is currently sold
+PRODUCTS,CREATED_AT,TIMESTAMP,,,,NOT NULL,,,Record creation timestamp
+PRODUCTS,UPDATED_AT,TIMESTAMP,,,,NOT NULL,,,Watermark for incremental load
+INVENTORY,INVENTORY_ID,BIGINT,,,,NOT NULL,YES,,Unique identifier for inventory record
+INVENTORY,PRODUCT_ID,INTEGER,,,,NOT NULL,,,FK to products table
+INVENTORY,WAREHOUSE_CODE,VARCHAR,20,,,NOT NULL,,,Warehouse location code
+INVENTORY,QUANTITY_ON_HAND,INTEGER,,,,NOT NULL,,,Current stock count
+INVENTORY,REORDER_LEVEL,INTEGER,,,,,,50,Quantity at which reorder is triggered
+INVENTORY,LAST_RESTOCKED_DATE,DATE,,,,,,, Date of last restock
+INVENTORY,CREATED_AT,TIMESTAMP,,,,NOT NULL,,,Record creation timestamp
+INVENTORY,UPDATED_AT,TIMESTAMP,,,,NOT NULL,,,Watermark for incremental load

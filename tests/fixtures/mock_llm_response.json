@@ -1,0 +1,83 @@
+[
+  {
+    "summary": "Implement user authentication with SSO support",
+    "description": "Build a single sign-on authentication flow that integrates with the existing identity provider. Users should be able to log in using their corporate credentials without a separate password.",
+    "issuetype": "Story",
+    "priority": "High",
+    "labels": ["authentication", "sso", "security"],
+    "storyPoints": 8,
+    "acceptanceCriteria": [
+      "Users can log in with corporate SSO credentials",
+      "Session tokens expire after 8 hours of inactivity",
+      "Failed login attempts are logged and alerted after 5 failures"
+    ],
+    "extractionConfidence": 0.95,
+    "temporalMarkers": [],
+    "supersedes": false,
+    "reporter": null,
+    "sprint": null,
+    "fixVersion": null,
+    "projectName": "Mock Project",
+    "requirementType": "New_Dvlp",
+    "stakeholderName": null,
+    "objective": "Allow users to authenticate using corporate SSO",
+    "expectedOutcome": "Users can log in without a separate password",
+    "connectionsDbDetails": "users table, identity provider API",
+    "successConditions": ["Login succeeds with valid SSO token", "Redirect to dashboard after login"],
+    "validationRules": ["Token must be valid JWT", "User must exist in directory"]
+  },
+  {
+    "summary": "Fix data export failure for files larger than 2GB",
+    "description": "The export feature crashes with an out-of-memory error when the file size exceeds 2GB. Implement streaming export to handle large files without loading the entire file into memory.",
+    "issuetype": "Bug",
+    "priority": "Critical",
+    "labels": ["data-export", "performance", "bug"],
+    "storyPoints": 5,
+    "acceptanceCriteria": [
+      "Files up to 10GB can be exported without error",
+      "Export progress is shown to the user",
+      "Export can be cancelled mid-way"
+    ],
+    "extractionConfidence": 0.92,
+    "temporalMarkers": [],
+    "supersedes": false,
+    "reporter": null,
+    "sprint": null,
+    "fixVersion": null,
+    "projectName": "Mock Project",
+    "requirementType": "Bug_Fix",
+    "stakeholderName": null,
+    "objective": "Prevent out-of-memory crashes during large file exports",
+    "expectedOutcome": "Files of any supported size can be exported reliably",
+    "connectionsDbDetails": "export_jobs table, file storage bucket",
+    "successConditions": ["Export completes for 5GB test file", "Memory usage stays below 512MB during export"],
+    "validationRules": ["File size must not exceed configured maximum", "User must have export permission"]
+  },
+  {
+    "summary": "Add rate limiting to the API gateway",
+    "description": "Implement rate limiting on the API gateway to prevent abuse and protect backend services. Each client should be limited to a configurable number of requests per minute.",
+    "issuetype": "Task",
+    "priority": "High",
+    "labels": ["api", "rate-limiting", "infrastructure"],
+    "storyPoints": 3,
+    "acceptanceCriteria": [
+      "Requests exceeding the rate limit receive a 429 response",
+      "Rate limit headers are included in all API responses",
+      "Limits are configurable per client tier"
+    ],
+    "extractionConfidence": 0.88,
+    "temporalMarkers": [],
+    "supersedes": false,
+    "reporter": null,
+    "sprint": null,
+    "fixVersion": null,
+    "projectName": "Mock Project",
+    "requirementType": "Enhancement",
+    "stakeholderName": null,
+    "objective": "Protect the API from abuse and ensure fair usage",
+    "expectedOutcome": "API is protected with configurable per-client rate limits",
+    "connectionsDbDetails": "API gateway, Redis cache",
+    "successConditions": ["Rate limit triggers correctly at configured threshold", "No false positives for legitimate traffic"],
+    "validationRules": ["Rate limit must be positive integer", "Burst allowance must not exceed 2x rate limit"]
+  }
+]

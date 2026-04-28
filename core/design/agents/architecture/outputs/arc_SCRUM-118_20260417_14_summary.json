@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "Order Analytics Platform",
+  "request_type": "new development",
+  "selected_architecture": "Full Dataflow Lambda \u2014 Unified Apache Beam SDK for Streaming and Batch",
+  "pattern_type": "hybrid",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Google Pub/Sub",
+    "processing": "Google Dataflow (Apache Beam SDK)",
+    "storage": "BigQuery + GCS",
+    "orchestration": "Cloud Composer 2",
+    "monitoring": "Cloud Monitoring + Cloud Logging",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Streaming: Dataflow reads continuously from Pub/Sub topic orders.events (project: verizon-data) using the Apache Beam PubSubIO connector. Batch: Dataflow reads incrementally from PostgreSQL public.orders and public.order_items tables (host: orders-db.corp.com:5432, database: orders_db) via Apache Beam JdbcIO using the updated_at watermark column, triggered daily at 02:00 UTC by Cloud Composer 2.",
+    "2. Processing: Streaming path: Dataflow applies event-type parsing (order_placed, order_shipped, order_delivered, order_cancelled), JSON schema validation, per-key stateful deduplication on event_id using Beam State and Timer APIs, and direct write to BigQuery via Storage Write API in exactly-once mode. Batch path: Dataflow applies watermark-based incremental extraction, row-level deduplication on order_id via BigQuery MERGE, and reconciliation of any late-arriving or missed events against the existing verizon_orders_deah dataset. Both paths append execution metadata to pipeline_audit.pipeline_run_log on completion.",
+    "3. Storage: Both paths target the verizon_orders_deah dataset in BigQuery project verizon-data. Streaming path writes to order_events (partitioned by event_date). Batch path writes to orders and order_items (both partitioned by order_date). A GCS bucket serves as Dataflow temporary and staging storage. pipeline_audit.pipeline_run_log records run_id, pipeline_name, start_time, end_time, rows_processed, and status for every execution.",
+    "4. Consumption: Live operational dashboards consume the order_events table via the BigQuery streaming buffer, achieving sub-60-second visibility from Pub/Sub publish. Business reporting and historical analysis consume the fully reconciled orders and order_items tables after daily batch completion by the 04:00 UTC SLA. BigQuery BI Engine or Connected Sheets can be layered for self-service access."
+  ],
+  "key_constraints": [
+    "technology.preferred_tools: [Dataflow, Cloud Composer]; objective: Lambda architecture with both streaming and daily batch reconciliation paths",
+    "non_functional.latency: Data available in BigQuery within 60 seconds of Pub/Sub publish",
+    "non_functional.sla: Batch DAG must complete before 04:00 AM UTC; technology.preferred_tools: [Cloud Composer]",
+    "objective: Both paths write to the same BigQuery dataset using a Lambda architecture; data_requirements.source_systems: Pub/Sub + PostgreSQL 13",
+    "functional_requirements: Partition all BigQuery target tables by event_date and order_date"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Network Connectivity",
+      "mitigation": "Provision a Cloud VPN HA tunnel (two tunnels across two Cloud Routers for 99.99% SLA) or a Cloud Interconnect dedicated connection to the corporate data centre. Configure Cloud Composer DAG retry with exponential backoff (3 retries, 15-minute intervals). Set a PagerDuty or email alert on DAG failure within 15 minutes of scheduled start time."
+    },
+    {
+      "risk": "Deduplication Correctness",
+      "mitigation": "Use Dataflow Storage Write API exactly-once mode to prevent duplicate streaming inserts. Apply BigQuery MERGE statements in the batch reconciliation path keyed on event_id (order_events) and order_id (orders, order_items). Schedule a daily post-reconciliation data quality query that counts records with duplicate primary keys and triggers a Cloud Monitoring alert if count exceeds zero."
+    },
+    {
+      "risk": "Schema Evolution",
+      "mitigation": "Register Pub/Sub message schemas using the Pub/Sub Schema Registry feature (Avro or Protobuf). Implement Dataflow-side schema validation with parse errors routed to a dead-letter topic. Maintain a BigQuery schema contract as a JSON file in GCS; run a schema drift check in the Composer DAG before each batch extraction and alert on any deviation from the expected schema."
+    }
+  ],
+  "scoring_one_liner": "Scored 7.85/10 \u2014 Cost 7, Scalability 8, Complexity 8, Latency 9, Operability 8. Trade-offs accepted: The continuous cost of the always-on Dataflow streaming job is accepted given the 60-second real-time latency SLA, which cannot be achieved via micro-batch or scheduled polling. The dependency on JDBC network connectivity to on-premises orders-db.corp.com for the batch path is accepted under the assumption that a stable Cloud VPN or Cloud Interconnect path will be provisioned as part of infrastructure prerequisites. Per-key streaming deduplication provides best-effort exactly-once semantics on the streaming path; final authoritative deduplication is delegated to the daily BigQuery MERGE reconciliation, which is consistent with the Lambda architecture's batch-layer correctness guarantee.",
+  "open_blockers": [
+    "What is the exact network path from GCP Dataflow workers to orders-db.corp.com \u2014 Cloud VPN HA, Cloud Interconnect, or public internet with SSL mutual TLS? The answer determines Dataflow worker network configuration, JDBC connection string parameters, and the security review scope for the batch ingestion path.",
+    "What is the authoritative schema (field names, types, nullability) for Pub/Sub orders.events messages \u2014 JSON with a fixed schema, Avro with a schema registry entry, or Protobuf? A formal schema contract is required before Dataflow streaming pipeline development can begin.",
+    "What is the acceptable deduplication semantics for the streaming path \u2014 best-effort at-least-once with downstream MERGE correction (simpler) or exactly-once guaranteed at ingest time via Storage Write API (higher cost)? This choice affects both Dataflow pipeline design and BigQuery write quota consumption."
+  ],
+  "ticket_id": "SCRUM-118"
+}

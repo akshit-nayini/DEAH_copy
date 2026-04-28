@@ -1,0 +1,15 @@
+TABLE_NAME,COLUMN_NAME,DATA_TYPE,LENGTH,PRECISION,SCALE,NULLABLE,PRIMARY_KEY,DEFAULT_VALUE,DESCRIPTION
+EMPLOYEES,EMPLOYEE_ID,NUMBER,,10,,NOT NULL,NO,,Unique identifier for each employee
+EMPLOYEES,FIRST_NAME,VARCHAR2,50,,,NOT NULL,,,Employee first name
+EMPLOYEES,LAST_NAME,VARCHAR2,50,,,NOT NULL,,,Employee last name
+EMPLOYEES,EMAIL,VARCHAR2,100,,,NOT NULL,,,Employee email address
+EMPLOYEES,PHONE_NUMBER,VARCHAR2,20,,,,,,Employee contact phone number
+EMPLOYEES,HIRE_DATE,DATE,,,,NOT NULL,,,Date the employee was hired
+EMPLOYEES,JOB_ID,VARCHAR2,20,,,NOT NULL,,,Job role identifier
+EMPLOYEES,SALARY,NUMBER,,8,2,NOT NULL,,,Employee monthly salary
+EMPLOYEES,COMMISSION_PCT,NUMBER,,4,2,,,,Commission percentage if applicable
+EMPLOYEES,MANAGER_ID,NUMBER,,10,,,,,"ID of the employee's manager (self-referencing)"
+EMPLOYEES,DEPARTMENT_ID,NUMBER,,4,,,,,Department the employee belongs to
+EMPLOYEES,STATUS,VARCHAR2,10,,,NOT NULL,,ACTIVE,Employment status (ACTIVE/INACTIVE/TERMINATED)
+EMPLOYEES,CREATED_DATE,TIMESTAMP,,,, NOT NULL,,,Record creation timestamp
+EMPLOYEES,UPDATED_DATE,TIMESTAMP,,,,,,, Record last updated timestamp

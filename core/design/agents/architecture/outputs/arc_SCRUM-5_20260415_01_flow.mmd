@@ -1,0 +1,41 @@
+%% Architecture Flow: Customer360 | GCP | batch
+flowchart LR
+
+    subgraph rec["⭐ Option 1: Cloud Composer + Dataflow (Serverless Beam ETL) — Recommended"]
+        direction LR
+        I1["📥 Ingestion<br/>Cloud SQL Auth Proxy + Dataflow JDBC connector"]
+        P1["⚙️ Processing<br/>Dataflow (Apache Beam SDK 2.x)"]
+        S1["💾 Storage<br/>BigQuery + GCS"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Composer 2 (Airflow 2.x)"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring + Cloud Logging"]
+        IaC1["🔨 IaC<br/>Terraform"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o2["Option 2: Cloud Composer + Dataproc (Ephemeral PySpark ETL)"]
+        direction LR
+        I2["📥 Ingestion<br/>MySQL JDBC Driver + Dataproc PySpark"]
+        P2["⚙️ Processing<br/>Dataproc (Apache Spark 3.x)"]
+        S2["💾 Storage<br/>GCS (Parquet) + BigQuery"]
+        C2["📊 Consumption<br/>Consumption"]
+        I2 --> P2 --> S2 --> C2
+    end
+
+    subgraph o3["Option 3: Cloud Composer + Cloud Data Fusion (Low-Code Visual ETL)"]
+        direction LR
+        I3["📥 Ingestion<br/>Cloud Data Fusion MySQL JDBC Plugin"]
+        P3["⚙️ Processing<br/>Cloud Data Fusion (CDAP 6.x)"]
+        S3["💾 Storage<br/>BigQuery + GCS"]
+        C3["📊 Consumption<br/>Consumption"]
+        I3 --> P3 --> S3 --> C3
+    end
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I2,P2,S2,C2,I3,P3,S3,C3 rejected

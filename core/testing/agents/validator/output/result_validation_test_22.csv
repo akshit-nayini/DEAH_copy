@@ -1,0 +1,8 @@
+test_case,description,status
+TC001,User list returns all active users,PASS
+TC002,Role assignments populated,PASS
+TC003,Expired permissions removed,PASS
+TC004,User flags reset correctly,PASS
+TC005,Audit log captures changes,PASS
+TC006,Permission join returns correct mappings,PASS
+TC007,Export table cleared,PASS

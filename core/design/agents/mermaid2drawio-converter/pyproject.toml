@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "mermaid2drawio"
+version = "1.0.0"
+description = "Scan Git repos for Mermaid diagrams and convert to Draw.io with cloud service icons"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = []
+
+[project.scripts]
+mermaid2drawio = "mermaid2drawio.cli:main"

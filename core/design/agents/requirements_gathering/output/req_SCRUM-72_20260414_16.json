@@ -1,0 +1,89 @@
+{
+  "source": "jira",
+  "ticket_id": "SCRUM-72",
+  "request_type": "new development",
+  "run_plan": [
+    "data_model",
+    "architecture",
+    "implementation_steps"
+  ],
+  "project_name": "network 5g core requirement",
+  "objective": "resolve performance degradation from heavy analytical queries running alongside transactional workloads causing query timeouts, slow response times, and production incidents. establish single source of truth for historical data to eliminate inconsistent numbers across dashboards, reports, and ml pipelines. develop a new data pipeline to extract data from mysql source database to bigquery target",
+  "business_context": "Production transactional systems are experiencing performance issues due to analytical queries running alongside operational workloads. Multiple systems are showing inconsistent data across dashboards, reports, and ML pipelines, indicating need for centralized data architecture.",
+  "functional_requirements": [
+    "Extract all historical data from MySQL source database to BigQuery",
+    "Perform full historical load of in-scope source tables",
+    "Implement automated data reconciliation between source and target",
+    "Create centralized analytics store in BigQuery",
+    "Eliminate analytical query load from transactional systems"
+  ],
+  "data_requirements": {
+    "source_systems": [
+      "mysql-druid-metadatastore"
+    ],
+    "data_types": "transactional and analytical data",
+    "volume": "full historical load",
+    "frequency": "batch processing"
+  },
+  "technology": {
+    "stack": "MySQL to BigQuery",
+    "cloud_or_onprem": "GCP",
+    "environment": "production",
+    "preferred_tools": [
+      "BigQuery"
+    ]
+  },
+  "non_functional": {
+    "performance": "eliminate query timeouts and slow response times in production",
+    "scalability": "support full historical data load",
+    "sla": "zero tolerance for data discrepancies",
+    "latency": "batch processing acceptable"
+  },
+  "security": {
+    "data_sensitivity": "production transactional data",
+    "access_controls": "controlled access to source database credentials",
+    "compliance": "data integrity validation requirements"
+  },
+  "constraints": {
+    "technical_limitations": "zero tolerance for data discrepancies, pipeline must halt on any validation failure",
+    "timeline": "high priority",
+    "budget": null
+  },
+  "existing_architecture": null,
+  "source_connections": [
+    {
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "db_type": "mysql",
+      "database": "agentichub",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "assumptions": [],
+  "inferred_assumptions": [],
+  "acceptance_criteria": [
+    "Row count in BigQuery raw table equals row count in source table at time of extraction",
+    "Automated reconciliation query run post-load with results logged to pipeline_audit.pipeline_run_log",
+    "Count(*) in BigQuery raw table for extraction window must equal count(*) in source table for same window with zero tolerance",
+    "Any discrepancy triggers pipeline halt and alert",
+    "Validation applied after every extract task for every table, every run"
+  ],
+  "expected_outputs": [
+    "Full historical load of all in-scope source tables loaded into BigQuery raw dataset",
+    "Verified row counts matching source tables",
+    "Centralized analytics store eliminating performance issues",
+    "BigQuery dataset verizon_data_deah with employees table",
+    "Automated reconciliation results logged to pipeline_audit.pipeline_run_log"
+  ],
+  "classification": {
+    "ingestion_type": "batch",
+    "output_type": "pipeline"
+  },
+  "confidence": 0.85,
+  "low_confidence_warning": null,
+  "raw_text": "Ticket: SCRUM-72\nSummary: build source database to bigquery data pipeline - development\nStatus: To Do\nPriority: High\nAssignee: Unassigned\nDescription:\nproject name: network 5g core requirement type: new_dvlp stakeholder: john objective resolve performance degradation from heavy analytical queries running alongside transactional workloads causing query timeouts, slow response times, and production incidents. establish single source of truth for historical data to eliminate inconsistent numbers across dashboards, reports, and ml pipelines. develop a new data pipeline to extract data from mysql source database (verizon-data:us-central1:mysql-druid-metadatastore) to bigquery target (verizon-data project, verizon_data_deah dataset) to resolve performance degradation caused by analytical queries running alongside transactional workloads and establish centralized analytics store. expected outcome full historical load of all in-scope source tables loaded into bigquery raw dataset with verified row counts, eliminating performance issues and providing centralized analytics store connections and db details source: verizon-data:us-central1:mysql-druid-metadatastore, ip:34.70.79.163, port:3306, database:agentichub, table:employees, username:sa. target: bigquery gcp project:verizon-data, dataset:verizon_data_deah, table:employees acceptance criteria success conditions: row count in bigquery raw table equals row count in source table at time of extraction automated reconciliation query run post-load with results logged to pipeline_audit.pipeline_run_log validation rules: count(*) in bigquery raw table for extraction window must equal count(*) in source table for same window with zero tolerance any discrepancy triggers pipeline halt and alert applied after every extract task for every table, every run"
+}

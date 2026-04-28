@@ -1,0 +1,41 @@
+%% Architecture Flow: mysql to bigquery data ingestion pipeline | GCP | batch
+flowchart TB
+
+    subgraph rec["⭐ Option 2: Cloud Run Jobs + Cloud Composer + BigQuery Stored Procedure MERGE (Recommended) — Recommended"]
+        I1["📥 Ingestion<br/>Cloud Run Jobs + Cloud SQL Auth Proxy (Python 3.11, SQLAlchemy, PyMySQL, PyArrow)"]
+        P1["⚙️ Processing<br/>Cloud Run Jobs (schema validation and data quality) + BigQuery MERGE via sp_mysqltobq_load.sql stored procedure"]
+        S1["💾 Storage<br/>BigQuery (date-partitioned, clustered on employee_id) + GCS (Parquet staging, 60-day lifecycle)"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Composer (Apache Airflow 2.x) with ExternalTaskSensor gating incremental DAG on historical load validation SUCCESS state"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring + Cloud Logging + Looker Studio (stakeholder audit dashboard connected to pipeline_audit_log BigQuery table)"]
+        IaC1["🔨 IaC<br/>Terraform (hashicorp/google provider)"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o1["Option 1: Dataflow (Apache Beam) + Cloud Composer Managed Batch Pipeline"]
+        I1["📥 Ingestion<br/>Cloud SQL Auth Proxy + Dataflow JDBC Connector (Apache Beam ReadFromJdbc)"]
+        P1["⚙️ Processing<br/>Dataflow (Apache Beam 2.x)"]
+        S1["💾 Storage<br/>BigQuery (date-partitioned, clustered) + GCS (Avro staging)"]
+        C1["📊 Consumption<br/>Consumption"]
+        I1 --> P1 --> S1 --> C1
+    end
+
+    subgraph o3["Option 3: Datastream CDC + BigQuery Direct Destination + Cloud Composer Validation Gate"]
+        I3["📥 Ingestion<br/>Datastream (GCP managed CDC for MySQL binary log replication with built-in BigQuery destination)"]
+        P3["⚙️ Processing<br/>BigQuery MERGE stored procedure (sp_mysqltobq_load.sql) triggered via Cloud Composer"]
+        S3["💾 Storage<br/>BigQuery (staging dataset for CDC events + production dataset for analytics) + GCS (optional Datastream intermediary for replay)"]
+        C3["📊 Consumption<br/>Consumption"]
+        I3 --> P3 --> S3 --> C3
+    end
+
+    rec ~~~ o1
+    o1 ~~~ o3
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I1,P1,S1,C1,I3,P3,S3,C3 rejected

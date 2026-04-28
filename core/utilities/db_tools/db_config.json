@@ -1,0 +1,10 @@
+{
+  "metadata_db": {
+    "db_type": "mysql",
+    "host": "34.70.79.163",
+    "port": "3306",
+    "user": "sa",
+    "password": "sa",
+    "database": "agentichub"
+  }
+}

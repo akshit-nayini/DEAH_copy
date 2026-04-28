@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "MySQL to BigQuery Data Ingestion Pipeline",
+  "request_type": "new development",
+  "selected_architecture": "GCP Datastream (CDC Backfill + Incremental) + Cloud Composer Validation Gate + BigQuery",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "GCP Datastream (MySQL CDC with backfill, GCS destination)",
+    "processing": "BigQuery (MERGE SQL for dedup and upsert, schema check SQL via INFORMATION_SCHEMA) + Cloud Composer Airflow operators",
+    "storage": "BigQuery (target employees table + audit_log + schema_registry) + GCS (Datastream landing zone, Avro change event files)",
+    "orchestration": "Cloud Composer 2 (managed Apache Airflow)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Looker Studio (BigQuery audit_log dashboard)",
+    "iac": "Terraform (GCP provider)"
+  },
+  "flow_steps": [
+    "1. Ingestion: GCP Datastream is configured with a MySQL source connection to Cloud SQL (verizon-data:us-central1:mysql-druid-metadatastore, agentichub.employees) using binary log CDC mode. A Datastream backfill job executes the one-time full historical load, writing all existing rows as change events to a GCS landing bucket in Avro format. Ongoing incremental CDC events are written to the same GCS bucket on a configurable staleness window aligned to the daily (or hourly) batch cadence.",
+    "2. Processing: Cloud Composer orchestrates a two-phase pipeline. Phase 1 (Historical Gate): a BigQuery batch load job ingests the GCS backfill Avro files into a BQ staging table; a Composer SQL operator executes pre-load schema compatibility checks comparing MySQL INFORMATION_SCHEMA against BigQuery INFORMATION_SCHEMA for type mismatches and new columns; a Cloud SQL hook executes SELECT COUNT(*) on the source and compares against BigQuery COUNT(*) for 100% row completeness validation; null constraint violations are logged to the audit_log table; a BigQuery MERGE statement deduplicates on PK and writes to the target employees table; a sign-off audit record is written to the BigQuery audit_log marking the historical load as validated. Incremental loads are gated by a Composer ExternalTaskSensor polling the audit_log for the historical sign-off record. Phase 2 (Incremental): on each scheduled cycle, a Composer task triggers a BigQuery load job from the GCS Datastream landing prefix for the cycle window into a staging table, executes the same schema check, row count delta validation, MERGE upsert, and audit write sequence.",
+    "3. Storage: GCS landing bucket receives all Datastream Avro change event files partitioned by stream and timestamp. BigQuery (verizon_data_deah dataset) holds: the target employees table (deduplicated and upserted via MERGE on PK), audit_log table (one record per pipeline execution with status, row counts, schema snapshot delta, failure details), and schema_registry table (column-level snapshot per run for drift detection and alerting). BigQuery is the single query surface for all analytics consumption.",
+    "4. Consumption: Analytics and reporting teams query BigQuery (verizon_data_deah.employees) directly. Stakeholder Yash accesses a Looker Studio dashboard connected to the BigQuery audit_log table for independent, developer-free visibility into load health including run status, source-to-target row count comparison, detected schema changes, last successful run timestamp, and failure root cause. Cloud Monitoring alerting policies trigger on Datastream stream errors, Datastream lag exceeding threshold, Cloud Composer task failures, and BigQuery load job errors within the configured SLA notification window."
+  ],
+  "key_constraints": [
+    "Implement a scheduled incremental data load pipeline that continuously syncs new and updated records from MySQL employees table to BigQuery on a per-table cadence (hourly or daily)",
+    "Execute a one-time full historical load of the MySQL employees table (agentichub) into BigQuery verizon_data_deah dataset with 100% data completeness and no data loss",
+    "Gate incremental load activation: incremental pipeline must not begin until historical load validation is fully passed and signed off",
+    "Enforce primary key uniqueness in BigQuery after every load execution; prevent data duplication and gaps across all incremental load cycles",
+    "Perform pre-load schema compatibility checks covering data types, null handling, field names, and new column handling strategy before each load execution"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Credential Exposure",
+      "mitigation": "Store all MySQL credentials including password in GCP Secret Manager before any pipeline component is provisioned. Configure Datastream and Cloud Composer to reference Secret Manager resource IDs rather than plaintext values. Enforce Secret Manager access via dedicated service account with minimal IAM scope. Rotate the sa password before first production deployment and implement a 90-day rotation policy."
+    },
+    {
+      "risk": "Data Completeness \u2014 Missing Change Indicator",
+      "mitigation": "Perform a schema audit of the employees table before pipeline design is finalized to confirm the presence and reliability of an incremental change indicator. If absent, implement a full table reload strategy (daily TRUNCATE plus INSERT OVERWRITE) as an interim measure until a proper change tracking column is added to the source schema by the owning application team."
+    },
+    {
+      "risk": "Binlog Retention Gap",
+      "mitigation": "Configure Cloud SQL binlog retention to a minimum of 7 days using the binlog_expire_logs_seconds parameter. Implement a Cloud Monitoring alert on Datastream stream lag exceeding 50 percent of the binlog retention window to trigger an operations response before events are at risk of expiry. Document the resync runbook and include it in the operational handover package."
+    }
+  ],
+  "scoring_one_liner": "Scored 4.10/10 \u2014 Cost 3, Scalability 5, Complexity 4, Latency 5, Operability 4. Trade-offs accepted: The following trade-offs are explicitly accepted under this recommendation: (1) Datastream per-GB pricing introduces cost uncertainty at unknown data volumes \u2014 mitigated by enabling Cloud Billing budget alerts and a Cloud Monitoring alert on Datastream bytes-processed metric before go-live; (2) MySQL binlog must be enabled with row-image format FULL on the Cloud SQL instance \u2014 accepted as a one-time DBA configuration step with low ongoing operational risk and a well-documented Cloud SQL procedure; (3) the GCS landing zone adds a processing hop versus direct BigQuery streaming \u2014 accepted given the batch SLA requirement and the replay capability this hop provides in the event of downstream failures; (4) native row-count reconciliation between MySQL source and BigQuery target must be implemented as a custom Cloud Composer task \u2014 accepted as a small, well-bounded validation component that does not affect the core ingestion architecture and is testable in isolation.",
+  "open_blockers": [
+    "Is MySQL binary logging currently enabled on Cloud SQL instance verizon-data:us-central1:mysql-druid-metadatastore with binlog_format=ROW and binlog_row_image=FULL? If not, does the DBA team have authority and an estimated timeline to enable it? This is a hard prerequisite for Option 3 (Datastream) and must be confirmed before any pipeline implementation begins.",
+    "Can a dedicated MySQL replication user with REPLICATION SLAVE, REPLICATION CLIENT, and SELECT privileges be created on the agentichub database for Datastream use? If organizational policy prohibits replication-level grants, Option 2 (Cloud Run Jobs with standard read-only user) is the required fallback.",
+    "What is the approximate current row count of the agentichub.employees table and what is the estimated daily change rate (INSERT, UPDATE, and DELETE operations per day)? These figures are required to estimate Datastream processing costs, BigQuery load job sizing, and to determine whether a daily full-snapshot approach is more cost-effective than CDC."
+  ],
+  "ticket_id": "SCRUM-123"
+}

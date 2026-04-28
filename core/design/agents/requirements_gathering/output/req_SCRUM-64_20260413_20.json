@@ -1,0 +1,95 @@
+{
+  "source": "jira",
+  "ticket_id": "SCRUM-64",
+  "request_type": "new development",
+  "run_plan": [
+    "data_model",
+    "architecture",
+    "implementation_steps"
+  ],
+  "project_name": "Verizon analytics platform",
+  "objective": "Eliminate performance degradation from heavy analytical queries on production database and provide centralized analytics store with single source of truth by building a comprehensive data pipeline to extract data from MySQL to BigQuery with full historical load followed by daily incremental syncs",
+  "business_context": "Heavy analytical queries are degrading production database performance. Organization needs a centralized analytics store with single source of truth to separate analytical workloads from production systems while maintaining data consistency and availability.",
+  "functional_requirements": [
+    "Build data pipeline from MySQL to BigQuery",
+    "Perform full historical load of employee data",
+    "Implement daily incremental syncs using updated_at watermark column",
+    "Use UPSERT logic for data synchronization",
+    "Direct all reads to read-replica to avoid production impact",
+    "Ensure data deduplication in target system",
+    "Implement row count reconciliation with zero tolerance",
+    "Validate primary key uniqueness and not null constraints",
+    "Perform foreign key referential integrity checks"
+  ],
+  "data_requirements": {
+    "source_systems": [
+      "MySQL (Agentichub database)"
+    ],
+    "data_types": "Employee data with primary key, updated_at timestamp, and related foreign key relationships",
+    "volume": "Full historical load plus daily incremental updates",
+    "frequency": "Daily incremental sync by 06:00 AM UTC"
+  },
+  "technology": {
+    "stack": "MySQL to BigQuery data pipeline",
+    "cloud_or_onprem": "GCP (Google Cloud Platform)",
+    "environment": "Production with read-replica configuration",
+    "preferred_tools": [
+      "Airflow",
+      "dbt"
+    ]
+  },
+  "non_functional": {
+    "sla": "Data available by 06:00 AM UTC daily",
+    "performance": "Zero production database performance impact through read-replica usage",
+    "latency": "Daily refresh cycle",
+    "scalability": "Support for full historical load and ongoing incremental updates"
+  },
+  "security": {
+    "data_sensitivity": null,
+    "access_controls": "Read-replica access only for production database reads",
+    "compliance": null
+  },
+  "constraints": {
+    "timeline": "Daily completion by 06:00 AM UTC",
+    "technical_limitations": "Must use read-replica to avoid production database impact",
+    "budget": null
+  },
+  "existing_architecture": null,
+  "source_connections": [
+    {
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "db_type": "mysql",
+      "database": "Agentichub",
+      "source_tables": [
+        "employees"
+      ],
+      "username": null
+    }
+  ],
+  "assumptions": [],
+  "inferred_assumptions": [],
+  "acceptance_criteria": [
+    "Row count in BigQuery equals source table count with 0% tolerance",
+    "Airflow DAG completes before 06:00 AM UTC daily",
+    "dbt uniqueness test passes with 0 failures on primary key",
+    "Connection string points only to replica host",
+    "COUNT(*) reconciliation between source and target with zero tolerance",
+    "Primary key (id) must be not null and unique in curated layer",
+    "Foreign key referential integrity checks for order_items.order_id and payments.order_id"
+  ],
+  "expected_outputs": [
+    "Clean, deduplicated employee data in BigQuery curated layer",
+    "Daily data refresh completed by 06:00 AM UTC",
+    "Zero production database performance impact",
+    "Data pipeline with full historical and incremental sync capabilities"
+  ],
+  "classification": {
+    "ingestion_type": "batch",
+    "output_type": "pipeline"
+  },
+  "confidence": 0.95,
+  "low_confidence_warning": null,
+  "raw_text": "Ticket: SCRUM-64\nSummary: Create automated data pipeline for Verizon analytics platform\nStatus: To Do\nPriority: High\nAssignee: Unassigned\nDescription:\nProject Name: Verizon analytics platform Requirement Type: New_Dvlp Stakeholder: John Objective Eliminate performance degradation from heavy analytical queries on production database and provide centralized analytics store with single source of truth Build a comprehensive data pipeline to extract data from verizon-data:us-central1:mysql-druid-metadatastore (Agentichub.employees) to BigQuery (verizon_data_dea.employees). The pipeline must perform a full historical load followed by daily incremental syncs using updated_at watermark column with UPSERT logic. All reads must be directed to read-replica to avoid production database performance impact. Expected Outcome Clean, deduplicated data available in BigQuery curated layer by 06:00 AM UTC daily with zero production database impact Connections and DB Details Source: verizon-data:us-central1:mysql-druid-metadatastore (IP: 34.70.79.163:3306), Database: Agentichub, Table: employees. Target: BigQuery project verizon-data, dataset verizon_data_dea, table employees Acceptance Criteria Success Conditions: Row count in BigQuery equals source table count with 0% tolerance Airflow DAG completes before 06:00 AM UTC daily dbt uniqueness test passes with 0 failures on primary key Connection string points only to replica host Validation Rules: COUNT(*) reconciliation between source and target with zero tolerance Primary key (id) must be not null and unique in curated layer Foreign key referential integrity checks for order_items.order_id and payments.order_id"
+}

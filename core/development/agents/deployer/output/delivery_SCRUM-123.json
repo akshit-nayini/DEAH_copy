@@ -1,0 +1,126 @@
+{
+  "project": "MySQL to BigQuery Data Ingestion Pipeline",
+  "sprint": "SCRUM-123",
+  "table": "stg_employees",
+  "version": "1.0",
+  "repo": "",
+  "branch": "feature/SCRUM-123_20260420_v1",
+  "target_branch": "main",
+  "commit_message": "feat: SCRUM-123 \u2014 This pipeline ingests the MySQL `agentichub.employees` table (hosted on Cloud SQ",
+  "quality_score": 80.0,
+  "approved_for_deploy": true,
+  "generated_at": "2026-04-20T17:18:53.798824+00:00",
+  "total_artifacts": 8,
+  "pipeline_summary": "This pipeline ingests the MySQL `agentichub.employees` table (hosted on Cloud SQL instance `verizon-data:us-central1:mysql-druid-metadatastore` at `34.70.79.163:3306`) into the BigQuery dataset `verizon_data_deah` using Cloud Composer 2 as the orchestrator. Two DAGs are implemented: (1) `employees_full_load` \u2014 a manually triggered, one-time historical full load that exports all rows via the Cloud SQL Admin API to GCS (`gs://verizon-data-etl-staging/employees/full/`), loads into a transient buffer table `employees_staging` via a BigQuery Native Load Job, and MERGEs into the permanent partitioned staging table `stg_employees`; (2) `employees_incremental_load` \u2014 a scheduled hourly DAG (`0 * * * *`) that applies a watermark-delta filter (`updated_date > last_watermark` or `created_date > last_watermark` as fallback, or PK-delta as secondary fallback) to export only new/changed rows to GCS (`gs://verizon-data-etl-staging/employees/incremental/`), loads into `employees_staging`, and MERGEs into `stg_employees`. Both DAGs enforce pre-load schema compatibility checks, post-load row-count validation, null constraint violation scans, watermark advancement, and audit log writes to `etl_audit_log`. The target table `stg_employees` is partitioned by `updated_date` (DAY granularity) and clustered on `[department_id, status, job_id]`. Five BigQuery control/support tables are provisioned: `stg_employees`, `employees_staging`, `etl_watermark`, `etl_audit_log`, and `etl_control`. MySQL credentials are injected via environment variable at runtime. Cloud Monitoring alerting and a Looker Studio dashboard on `etl_audit_log` provide operational visibility.",
+  "target_tables": [
+    {
+      "name": "verizon_data_deah.stg_employees",
+      "layer": "staging",
+      "type": "CREATE"
+    },
+    {
+      "name": "verizon_data_deah.employees_staging",
+      "layer": "staging",
+      "type": "CREATE"
+    },
+    {
+      "name": "verizon_data_deah.etl_watermark",
+      "layer": "core",
+      "type": "CREATE"
+    },
+    {
+      "name": "verizon_data_deah.etl_audit_log",
+      "layer": "core",
+      "type": "CREATE"
+    },
+    {
+      "name": "verizon_data_deah.etl_control",
+      "layer": "core",
+      "type": "CREATE"
+    }
+  ],
+  "services": [
+    {
+      "name": "Cloud Composer 2 (Apache Airflow)",
+      "type": "orchestration"
+    },
+    {
+      "name": "Google BigQuery",
+      "type": "warehouse"
+    },
+    {
+      "name": "Google Cloud Storage",
+      "type": "storage"
+    },
+    {
+      "name": "Cloud SQL (MySQL)",
+      "type": "orchestration"
+    },
+    {
+      "name": "Cloud Monitoring",
+      "type": "orchestration"
+    },
+    {
+      "name": "Looker Studio",
+      "type": "orchestration"
+    }
+  ],
+  "files": [
+    {
+      "file_path": "ddl/ddl_stg_employees.sql",
+      "file_type": "bigquery_ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    },
+    {
+      "file_path": "ddl/ddl_employees_staging.sql",
+      "file_type": "bigquery_ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    },
+    {
+      "file_path": "ddl/ddl_etl_watermark.sql",
+      "file_type": "bigquery_ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    },
+    {
+      "file_path": "ddl/ddl_etl_audit_log.sql",
+      "file_type": "bigquery_ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    },
+    {
+      "file_path": "ddl/ddl_etl_control.sql",
+      "file_type": "bigquery_ddl",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    },
+    {
+      "file_path": "dml/dml_merge_employees.sql",
+      "file_type": "bigquery_dml",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    },
+    {
+      "file_path": "dml/dml_advance_watermark.sql",
+      "file_type": "bigquery_dml",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    },
+    {
+      "file_path": "dag/dag_employees_full_load.py",
+      "file_type": "airflow_dag",
+      "change_type": "created",
+      "columns_affected": [],
+      "owner": ""
+    }
+  ]
+}

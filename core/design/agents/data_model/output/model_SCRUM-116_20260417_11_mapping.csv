@@ -1,0 +1,30 @@
+source_system,source_table,source_column,source_data_type,target_table,target_column,target_data_type,transformation_logic,is_partition_column,is_cluster_column,notes
+PostgreSQL,categories,CATEGORY_ID,INTEGER,stg_categories,category_id,INT64,CAST(CATEGORY_ID AS INT64),False,True,Primary key; NOT NULL enforced; INTEGER cast to INT64; UPSERT merge key
+PostgreSQL,categories,CATEGORY_NAME,VARCHAR,stg_categories,category_name,STRING,CAST(CATEGORY_NAME AS STRING),False,False,NOT NULL enforced; VARCHAR maps to STRING in BigQuery
+PostgreSQL,categories,DESCRIPTION,TEXT,stg_categories,description,STRING,CAST(DESCRIPTION AS STRING),False,False,Nullable TEXT mapped to STRING; BigQuery STRING handles unbounded length
+PostgreSQL,categories,PARENT_CATEGORY_ID,INTEGER,stg_categories,parent_category_id,INT64,CAST(PARENT_CATEGORY_ID AS INT64),False,False,Nullable self-referencing FK; null for root-level categories; supports category hierarchy traversal
+PostgreSQL,categories,CREATED_AT,TIMESTAMP,stg_categories,created_at,TIMESTAMP,CAST(CREATED_AT AS TIMESTAMP),True,False,NOT NULL enforced; partition column with DAY granularity; used for time-range pruning on full daily reloads
+PostgreSQL,suppliers,SUPPLIER_ID,INTEGER,stg_suppliers,supplier_id,INT64,CAST(SUPPLIER_ID AS INT64),False,True,Primary key; NOT NULL enforced; UPSERT merge key
+PostgreSQL,suppliers,SUPPLIER_NAME,VARCHAR,stg_suppliers,supplier_name,STRING,CAST(SUPPLIER_NAME AS STRING),False,False,NOT NULL enforced
+PostgreSQL,suppliers,CONTACT_EMAIL,VARCHAR,stg_suppliers,contact_email,STRING,CAST(CONTACT_EMAIL AS STRING),False,False,Nullable; VARCHAR mapped to STRING
+PostgreSQL,suppliers,COUNTRY,VARCHAR,stg_suppliers,country,STRING,CAST(COUNTRY AS STRING),False,True,Nullable; cluster column enabling efficient geographic filtering in supplier queries
+PostgreSQL,suppliers,IS_ACTIVE,BOOLEAN,stg_suppliers,is_active,BOOL,CAST(IS_ACTIVE AS BOOL),False,False,NOT NULL enforced; BOOLEAN maps directly to BOOL in BigQuery
+PostgreSQL,suppliers,CREATED_AT,TIMESTAMP,stg_suppliers,created_at,TIMESTAMP,CAST(CREATED_AT AS TIMESTAMP),True,False,NOT NULL enforced; partition column with DAY granularity; used for time-range pruning on full daily reloads
+PostgreSQL,products,PRODUCT_ID,INTEGER,stg_products,product_id,INT64,CAST(PRODUCT_ID AS INT64),False,False,Primary key; NOT NULL enforced; UPSERT merge key for incremental sync
+PostgreSQL,products,PRODUCT_NAME,VARCHAR,stg_products,product_name,STRING,CAST(PRODUCT_NAME AS STRING),False,False,NOT NULL enforced
+PostgreSQL,products,SKU,VARCHAR,stg_products,sku,STRING,CAST(SKU AS STRING),False,False,NOT NULL enforced; natural business key for product identification
+PostgreSQL,products,CATEGORY_ID,INTEGER,stg_products,category_id,INT64,CAST(CATEGORY_ID AS INT64),False,True,Nullable FK to stg_categories; cluster column for category-based product performance reporting
+PostgreSQL,products,SUPPLIER_ID,INTEGER,stg_products,supplier_id,INT64,CAST(SUPPLIER_ID AS INT64),False,True,Nullable FK to stg_suppliers; cluster column for supplier-based product analysis
+PostgreSQL,products,UNIT_PRICE,NUMERIC,stg_products,unit_price,NUMERIC,CAST(UNIT_PRICE AS NUMERIC),False,False,NOT NULL enforced; NUMERIC in PostgreSQL maps to NUMERIC in BigQuery preserving exact decimal precision for financial values
+PostgreSQL,products,DESCRIPTION,TEXT,stg_products,description,STRING,CAST(DESCRIPTION AS STRING),False,False,Nullable TEXT mapped to STRING
+PostgreSQL,products,IS_ACTIVE,BOOLEAN,stg_products,is_active,BOOL,CAST(IS_ACTIVE AS BOOL),False,True,NOT NULL enforced; cluster column enabling efficient active/inactive product filtering for performance reporting
+PostgreSQL,products,CREATED_AT,TIMESTAMP,stg_products,created_at,TIMESTAMP,CAST(CREATED_AT AS TIMESTAMP),False,False,NOT NULL enforced; not used for partitioning as updated_at serves as the incremental watermark
+PostgreSQL,products,UPDATED_AT,TIMESTAMP,stg_products,updated_at,TIMESTAMP,CAST(UPDATED_AT AS TIMESTAMP),True,False,NOT NULL enforced; partition column with DAY granularity; primary incremental watermark used by Airflow for daily delta extraction
+PostgreSQL,inventory,INVENTORY_ID,BIGINT,stg_inventory,inventory_id,INT64,CAST(INVENTORY_ID AS INT64),False,False,Primary key; NOT NULL enforced; BIGINT maps directly to INT64; UPSERT merge key for incremental sync
+PostgreSQL,inventory,PRODUCT_ID,INTEGER,stg_inventory,product_id,INT64,CAST(PRODUCT_ID AS INT64),False,True,NOT NULL enforced; FK to stg_products; cluster column for product-centric inventory trend queries
+PostgreSQL,inventory,WAREHOUSE_CODE,VARCHAR,stg_inventory,warehouse_code,STRING,CAST(WAREHOUSE_CODE AS STRING),False,True,NOT NULL enforced; cluster column for warehouse-based stock analysis
+PostgreSQL,inventory,QUANTITY_ON_HAND,INTEGER,stg_inventory,quantity_on_hand,INT64,CAST(QUANTITY_ON_HAND AS INT64),False,False,NOT NULL enforced; core metric for inventory trend analysis
+PostgreSQL,inventory,REORDER_LEVEL,INTEGER,stg_inventory,reorder_level,INT64,CAST(REORDER_LEVEL AS INT64),False,False,Nullable; stock threshold used for reorder alerting and stock management decisions
+PostgreSQL,inventory,LAST_RESTOCKED_DATE,DATE,stg_inventory,last_restocked_date,DATE,CAST(LAST_RESTOCKED_DATE AS DATE),False,False,Nullable DATE; maps directly to DATE in BigQuery; relevant for inventory trend and restocking cadence analysis
+PostgreSQL,inventory,CREATED_AT,TIMESTAMP,stg_inventory,created_at,TIMESTAMP,CAST(CREATED_AT AS TIMESTAMP),False,False,NOT NULL enforced; record creation timestamp
+PostgreSQL,inventory,UPDATED_AT,TIMESTAMP,stg_inventory,updated_at,TIMESTAMP,CAST(UPDATED_AT AS TIMESTAMP),True,False,NOT NULL enforced; partition column with DAY granularity; primary incremental watermark used by Airflow for daily delta extraction

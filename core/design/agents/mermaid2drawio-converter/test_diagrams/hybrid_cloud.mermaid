@@ -1,0 +1,12 @@
+flowchart TB
+    SF[Salesforce] --> KAFKA[Kafka]
+    KAFKA --> SPARK[Apache Spark]
+    SPARK --> SNOWFLAKE[Snowflake]
+    SPARK --> MONGO[MongoDB]
+    SNOWFLAKE --> TABLEAU[Tableau]
+    SNOWFLAKE --> DBT[dbt]
+    DBT --> LOOKER[Looker]
+    MONGO --> ELASTIC[Elasticsearch]
+    ELASTIC --> GRAFANA[Grafana]
+    KAFKA --> AIRFLOW[Airflow]
+    AIRFLOW --> SPARK

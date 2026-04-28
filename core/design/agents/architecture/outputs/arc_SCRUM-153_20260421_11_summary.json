@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "5gcore",
+  "request_type": "new development",
+  "selected_architecture": "Cloud SQL Export to GCS \u2192 BigQuery Load Job \u2192 Stored Procedure MERGE (Cloud Composer Orchestrated)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud SQL Admin API export (server-side GCS export via Cloud Composer CloudSQLExportOperator)",
+    "processing": "BigQuery Load Jobs (GCS \u2192 BQ staging table, free for GCS-sourced loads) + BigQuery Stored Procedure sp_mysqltobq_load.sql (serverless MERGE upsert on employee_id + updated_date composite key)",
+    "storage": "BigQuery (target table + staging table + audit log table, 60-day dataset expiry) + GCS (staging bucket with 3-day lifecycle)",
+    "orchestration": "Cloud Composer 2 (Apache Airflow 2.x \u2014 CloudSQLExportOperator, BigQueryInsertJobOperator, BigQueryCheckOperator, ExternalTaskSensor for historical load gate)",
+    "monitoring": "Cloud Monitoring (metric-based alerting on Composer task failures and schema validation alerts) + Cloud Logging (structured pipeline execution logs) + Looker Studio (stakeholder self-serve health dashboard backed by pipeline_audit_log)",
+    "iac": "Terraform (google provider: BigQuery dataset with expiry config + tables, GCS buckets with lifecycle rules, Composer 2 environment, IAM bindings for service accounts, Cloud Monitoring alert policies and notification channels)"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer DAG triggers Cloud SQL Admin API to export the employees table from the agentichub database on instance verizon-data:us-central1:mysql-druid-metadatastore to a dated GCS prefix (gs://verizon-5gcore-staging/employees/YYYY-MM-DD/) in CSV format with UTF-8 encoding; for incremental runs, a SQL WHERE clause on updated_date restricts the export to the delta window since the last successful load; Cloud SQL Admin API export is a server-side GCP operation requiring no Cloud SQL Auth Proxy",
+    "2. Processing: Cloud Composer executes sequential tasks: (1) pre-load schema validation compares MySQL INFORMATION_SCHEMA columns against the BigQuery staging table schema, checking field names, data types, nullability, and detecting new column additions \u2014 any mismatch blocks execution and raises a Cloud Monitoring alert; (2) BigQuery load job imports GCS CSV into transient staging table verizon_data_dea.employees_staging; (3) row count reconciliation task executes COUNT(*) against MySQL source and BigQuery staging and compares results, blocking progression on mismatch; (4) stored procedure sp_mysqltobq_load.sql is invoked via BigQuery Jobs API to MERGE staging into target table verizon_data_dea.employees on composite key (employee_id, updated_date), enforcing upsert semantics and deduplication; (5) primary key uniqueness check verifies no duplicate employee_id values exist in the target post-MERGE; (6) structured audit log record is written to verizon_data_dea.pipeline_audit_log capturing load type, row counts, validation outcomes, and execution timestamp",
+    "3. Storage: Primary target: BigQuery table verizon-data.verizon_data_dea.employees (date-partitioned on updated_date, clustered on employee_id); BigQuery dataset verizon_data_dea configured with default_table_expiration_ms = 5184000000 (60 days) enforcing the retention policy; GCS staging bucket with 3-day object lifecycle deletion policy; BigQuery audit log table verizon_data_dea.pipeline_audit_log with independent 365-day retention for compliance",
+    "4. Consumption: Analysts query verizon_data_dea.employees directly via BigQuery Studio or connected BI tools; stakeholders access a Looker Studio dashboard connected to verizon_data_dea.pipeline_audit_log for self-serve pipeline health visibility (load status, row counts, last successful run timestamp, and failure history) without engineering involvement"
+  ],
+  "key_constraints": [
+    "Source: MySQL Cloud SQL verizon-data:us-central1:mysql-druid-metadatastore; functional requirement: Load employees table into BigQuery; constraint: prefer managed services with no custom compute",
+    "Apply stored procedure sp_mysqltobq_load.sql with merge key logic on employee_id and updated_date to upsert records and prevent duplicates",
+    "Implement scheduled incremental loads; configure pipeline monitoring and failure alerting for all scheduled runs; ensure incremental pipeline activates only after full historical load validation",
+    "Perform pre-load schema validation to detect data type mismatches, null violations, field name discrepancies, and new column additions in MySQL; violations must block load completion",
+    "Perform row count reconciliation between MySQL source and BigQuery target after every full and incremental load; verify primary key uniqueness on employee_id post-load; verify null and datatype constraints before marking any load as successful"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "PII Data Security",
+      "mitigation": "Apply BigQuery column-level security policies (BigQuery Policy Tags) on identified PII fields before pipeline go-live; enforce GCS bucket encryption with CMEK or Google-managed keys; restrict dataset access via IAM to named service accounts and explicitly authorised analyst groups; document data classification and access controls in the security design artefact"
+    },
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Implement automated pre-load schema validation as a blocking Airflow task before every load execution; configure a Cloud Monitoring alert to fire immediately when schema validation detects any mismatch; enforce the documented column-addition handling strategy as a mandatory go-live gate approved by stakeholder yash"
+    },
+    {
+      "risk": "Cloud SQL Instance Contention",
+      "mitigation": "Schedule Cloud SQL export operations during an agreed low-activity window (e.g., 02:00\u201304:00 UTC); confirm with the DBA team whether a Cloud SQL read replica should be provisioned for analytics export isolation; add the scheduling window to the SLA documentation"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.85/10 \u2014 Cost 9, Scalability 7, Complexity 8, Latency 6, Operability 9. Trade-offs accepted: Accepted: (1) Hard-delete invisibility \u2014 rows deleted in MySQL will not be propagated as deletes to BigQuery; this limitation is documented in the data contract and mitigated by the 60-day retention policy and a future soft-delete reconciliation query if required. (2) Export consistency window \u2014 the Cloud SQL Admin API export is not guaranteed to be point-in-time consistent under active write load; mitigated by scheduling exports during the agreed low-activity window (02:00\u201304:00 UTC) or via a Cloud SQL read replica. (3) Single-threaded Cloud SQL export \u2014 adequate for current volume but will require architectural revisit at approximately 30\u201350 GB table size, providing a clear, documented scaling trigger.",
+  "open_blockers": [
+    "Are there specific PII fields in the employees table (e.g., national ID, date of birth, salary, home address) that require column-level masking, tokenisation, or BigQuery Policy Tag enforcement before data can land in the analytical dataset?",
+    "Has the formal column-addition handling strategy document been drafted and approved by stakeholder yash? This is documented as a hard go-live blocker \u2014 what is the target approval date relative to the SCRUM-153 delivery timeline?",
+    "Is the Cloud SQL instance verizon-data:us-central1:mysql-druid-metadatastore shared with Apache Druid or other operational workloads? If yes, what is the agreed export window and maximum allowable read load to avoid contention with other consumers?"
+  ],
+  "ticket_id": "SCRUM-153"
+}

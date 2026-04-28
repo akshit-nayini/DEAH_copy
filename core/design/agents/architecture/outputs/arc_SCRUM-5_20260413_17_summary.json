@@ -1,0 +1,49 @@
+{
+  "agent": "architecture",
+  "project_name": "Customer 360",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Functions + Cloud SQL Proxy + BigQuery",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Functions",
+    "processing": "Cloud Functions",
+    "storage": "BigQuery",
+    "orchestration": "Cloud Composer",
+    "monitoring": "Cloud Monitoring",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Functions triggered by Composer connects via Cloud SQL Proxy",
+    "2. Processing: Lightweight Python transformations in Cloud Functions",
+    "3. Storage: Direct BigQuery streaming inserts or batch loads",
+    "4. Consumption: BigQuery for analytics and reporting"
+  ],
+  "key_constraints": [
+    "latency",
+    "business_context",
+    "preferred_tools",
+    "frequency"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Network",
+      "mitigation": "Implement connection pooling and retry logic with exponential backoff"
+    },
+    {
+      "risk": "Data Volume",
+      "mitigation": "Monitor data volumes and implement chunking strategy or migrate to Dataflow"
+    },
+    {
+      "risk": "Security",
+      "mitigation": "Use Secret Manager for credential storage and IAM for access control"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.95/10 \u2014 Cost 9, Scalability 6, Complexity 9, Latency 9, Operability 8. Trade-offs accepted: Limited transformation capabilities and potential scaling constraints for future growth beyond 10GB",
+  "open_blockers": [
+    "What specific data transformations are required beyond basic extraction?",
+    "Are there data retention requirements for the ingested data?",
+    "What is the expected data growth rate for future capacity planning?"
+  ],
+  "ticket_id": "SCRUM-5"
+}

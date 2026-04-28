@@ -1,0 +1,159 @@
+"""
+sql_writer.py
+-------------
+Writes generated synthetic rows as a single BigQuery-compatible
+INSERT SQL file with one multi-row VALUES statement.
+
+Key difference from previous versions:
+  - Uses BQ native types directly from the mapping (INT64, STRING, NUMERIC etc.)
+  - Respects transformation_logic for correct type casting in output
+  - Notes partition and cluster columns in the SQL header
+  - Table name comes from target_table in mapping (not source filename)
+"""
+
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+
+# ── BQ type → SQL literal formatter ───────────────────────────────────────────
+
+def _escape(value: Any, bq_type: str) -> str:
+    """
+    Convert a Python value to its BigQuery SQL literal.
+    Uses the exact BQ type from the mapping file.
+    """
+    if value is None or str(value).strip().upper() in ("NULL", "NONE", ""):
+        return "NULL"
+
+    bq = bq_type.upper().strip()
+
+    # ── Boolean ───────────────────────────────────────────────────────────────
+    if bq in ("BOOL", "BOOLEAN"):
+        return "TRUE" if str(value).lower() in ("true", "1", "yes") else "FALSE"
+
+    # ── Integer types ─────────────────────────────────────────────────────────
+    if bq in ("INT64", "INTEGER", "INT", "SMALLINT", "BIGINT", "TINYINT", "BYTEINT"):
+        try:
+            return str(int(float(str(value))))
+        except (ValueError, TypeError):
+            return "NULL"
+
+    # ── Float / Numeric types ─────────────────────────────────────────────────
+    if bq in ("FLOAT64", "FLOAT", "NUMERIC", "BIGNUMERIC", "DECIMAL", "BIGDECIMAL"):
+        try:
+            return str(round(float(str(value)), 2))
+        except (ValueError, TypeError):
+            return "NULL"
+
+    # ── Date ─────────────────────────────────────────────────────────────────
+    if bq == "DATE":
+        return f"DATE('{str(value).strip()}')"
+
+    # ── Datetime / Timestamp ──────────────────────────────────────────────────
+    if bq in ("DATETIME", "TIMESTAMP"):
+        v = str(value).strip()
+        fn = "DATETIME" if bq == "DATETIME" else "TIMESTAMP"
+        return f"{fn}('{v}')"
+
+    # ── String / default ─────────────────────────────────────────────────────
+    v = str(value).replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{v}'"
+
+
+# ── SQL writer ─────────────────────────────────────────────────────────────────
+
+def write_sql(
+    rows: List[Dict[str, Any]],
+    profile: List[Dict],
+    table_name: str,
+    output_dir: str,
+    bq_project: str,
+    bq_dataset: str,
+    from_date: str,
+    to_date: str,
+    num_records: int,
+    mapping_file_name: str,
+    model: Optional[str] = None,
+) -> str:
+    """
+    Write a single .sql file for one target table.
+
+    Parameters
+    ----------
+    rows             : generated synthetic rows from generator_agent
+    profile          : column profile from schema_builder
+    table_name       : BQ target table name (from mapping target_table)
+    output_dir       : directory to write the SQL file
+    bq_project       : GCP project (from config.yaml)
+    bq_dataset       : BQ dataset (from config.yaml)
+    from_date        : date range start
+    to_date          : date range end
+    num_records      : record count (for header)
+    mapping_file_name: source mapping filename (for header)
+    model            : Claude model used (for header)
+
+    Returns
+    -------
+    Absolute path to the written .sql file.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    ordered      = sorted(profile, key=lambda c: c["ordinal"])
+    col_list     = ", ".join(f"`{c['name']}`" for c in ordered)
+    full_table   = f"`{bq_project}.{bq_dataset}.{table_name}`"
+    output_file  = os.path.join(output_dir, f"{table_name}.sql")
+    now          = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    agent_label  = f"Claude Agent ({model})" if model else "Claude Agent"
+
+    # Identify partition and cluster columns for header
+    partition_cols = [c["name"] for c in ordered if c.get("is_partition_column")]
+    cluster_cols   = [c["name"] for c in ordered if c.get("is_cluster_column")]
+
+    with open(output_file, "w", encoding="utf-8") as f:
+
+        # ── Header ─────────────────────────────────────────────────────────────
+        f.write("-- ============================================================\n")
+        f.write(f"-- Synthetic Data : {table_name}\n")
+        f.write(f"-- Generated at  : {now}\n")
+        f.write(f"-- Records       : {num_records}\n")
+        f.write(f"-- Date range    : {from_date} → {to_date}\n")
+        f.write(f"-- Source mapping: {mapping_file_name}\n")
+        f.write(f"-- Target table  : {full_table}\n")
+        if partition_cols:
+            f.write(f"-- Partition by  : {', '.join(partition_cols)}\n")
+        if cluster_cols:
+            f.write(f"-- Cluster by    : {', '.join(cluster_cols)}\n")
+        f.write(f"-- Generated by  : {agent_label}\n")
+        f.write("-- ============================================================\n\n")
+
+        # ── Column reference comment ────────────────────────────────────────────
+        f.write("-- Column reference:\n")
+        for col in ordered:
+            flags = []
+            if col.get("is_partition_column"): flags.append("PARTITION")
+            if col.get("is_cluster_column"):   flags.append("CLUSTER")
+            flag_str = f" [{', '.join(flags)}]" if flags else ""
+            f.write(f"--   {col['name']:<30} {col['bq_type']:<15}{flag_str}\n")
+        f.write("\n")
+
+        # ── INSERT statement ────────────────────────────────────────────────────
+        f.write(f"INSERT INTO {full_table}\n  ({col_list})\nVALUES\n")
+
+        for i, row in enumerate(rows):
+            vals = [
+                _escape(row.get(c["name"]), c["bq_type"])
+                for c in ordered
+            ]
+            comma = "," if i < len(rows) - 1 else ""
+            f.write(f"  ({', '.join(vals)}){comma}\n")
+
+        f.write(";\n")
+
+    return output_file
+
+
+def print_summary(output_file: str, num_rows: int, table_name: str) -> None:
+    size_kb = os.path.getsize(output_file) / 1024
+    print(f"  ✅  {table_name}.sql  —  {num_rows:,} rows  —  {size_kb:.1f} KB")
+    print(f"      → {output_file}")

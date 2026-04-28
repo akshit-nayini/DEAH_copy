@@ -1,0 +1,15 @@
+test_case,description,status
+TC001,Stale data removed before insert,FAIL
+TC002,Page views counted correctly,FAIL
+TC003,Unique visitors deduplicated by visitor_id,FAIL
+TC004,Add-to-cart events counted,FAIL
+TC005,Purchase count matches order table,FAIL
+TC006,Revenue sums only purchase events,FAIL
+TC007,Conversion rate = purchases / page views * 100,FAIL
+TC008,Zero page views produces 0% conversion not divide-by-zero,PASS
+TC009,Avg time on page excludes non-pageview events,PASS
+TC010,Only active products included,PASS
+TC011,Category rollup sums match product-level data,PASS
+TC012,Trending flag set for >50% growth vs 7-day avg,PASS
+TC013,Products with no history not flagged as trending,PASS
+TC014,Rerun on same date replaces not duplicates,PASS

@@ -1,0 +1,128 @@
+{
+  "source": "jira",
+  "ticket_id": "SCRUM-160",
+  "request_type": "new development",
+  "run_plan": [
+    "data_model",
+    "architecture",
+    "implementation_steps"
+  ],
+  "project_name": "5gcore",
+  "objective": "Design and implement a reliable and scalable pipeline to load MySQL tables from the agentichub database into Google BigQuery (verizon_data_dea dataset), supporting a one-time full historical load for all identified tables followed by ongoing scheduled incremental loads (hourly or daily per table) to underpin analytics, reporting, and long-term data storage for the 5gcore programme.",
+  "business_context": "The 5gcore programme requires consolidated analytics, reporting, and long-term data storage backed by MySQL source data in the agentichub database. Stakeholders (led by Yash) require independent visibility into data quality, load success, and audit logs without engineering involvement. The pipeline covers three workstreams \u2014 historical load, scheduled incremental load, and end-to-end monitoring with audit logging \u2014 and is currently in draft status pending stakeholder review.",
+  "functional_requirements": [
+    "Perform a one-time full historical load of all identified MySQL (agentichub) tables into BigQuery dataset verizon_data_dea with 100% data completeness before any incremental loads are activated",
+    "Implement scheduled incremental loads running hourly or daily per table using timestamp or primary key-based change tracking to detect new and updated records",
+    "Execute all load logic via stored procedure sp_mysqltobq_load.sql with merge key on employee_id and updated_date",
+    "Block the incremental load pipeline from starting until full historical load validation is confirmed and passes",
+    "Enforce a 60-day data retention policy on the target BigQuery table",
+    "Perform schema validation before each load with mismatch logging and a documented strategy for handling new MySQL columns",
+    "Perform row count reconciliation between MySQL and BigQuery after every load",
+    "Confirm primary key uniqueness post-load and verify null and datatype constraints against schema definitions",
+    "Maintain a complete audit log for every load execution capturing status, record counts, and timestamps",
+    "Provide stakeholder-accessible dashboards or log views enabling independent review of load success and execution history without engineering involvement",
+    "Send alerts promptly on any pipeline failure or data quality violation",
+    "Support an initial data volume of 5 GB with ongoing growth of 1 GB/month"
+  ],
+  "data_requirements": {
+    "source_systems": [
+      "MySQL agentichub database on GCP Cloud SQL instance verizon-data:us-central1:mysql-druid-metadatastore"
+    ],
+    "data_types": [
+      "structured relational tabular data"
+    ],
+    "volume": "5 GB initial load; 1 GB/month ongoing growth; 60-day retention on target BigQuery table",
+    "frequency": "One-time full historical load; ongoing incremental loads hourly or daily per table depending on business requirements"
+  },
+  "technology": {
+    "stack": [
+      "MySQL",
+      "Google BigQuery",
+      "GCP Cloud SQL",
+      "stored procedures (sp_mysqltobq_load.sql)"
+    ],
+    "environment": null,
+    "cloud_or_onprem": "cloud (GCP)",
+    "preferred_tools": [
+      "Google BigQuery",
+      "GCP Cloud SQL"
+    ]
+  },
+  "non_functional": {
+    "performance": "Historical load must achieve 100% data completeness verified by row count reconciliation; incremental loads must detect and load only changed records with no duplication or data loss",
+    "scalability": "Pipeline must accommodate ongoing data growth of 1 GB/month and support all agreed-upon MySQL tables beyond the initial employees table",
+    "latency": null,
+    "sla": "Scheduled incremental loads must run without failures on defined hourly or daily cadence; alerts must fire promptly on any pipeline failure or data quality violation"
+  },
+  "security": {
+    "data_sensitivity": null,
+    "access_controls": "MySQL source accessed via username 'sa'",
+    "compliance": null
+  },
+  "constraints": {
+    "budget": null,
+    "timeline": "Currently in draft status pending stakeholder review; no hard delivery date specified",
+    "technical_limitations": "Incremental loads must not begin until historical load validation passes; new column handling strategy must be documented and implemented before go-live"
+  },
+  "existing_architecture": null,
+  "source_connections": [
+    {
+      "db_type": "mysql",
+      "database": "agentichub",
+      "instance_connection_name": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "host": "34.70.79.163",
+      "port": "3306",
+      "username": "sa",
+      "source_tables": [
+        "employees"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Merge key for all incremental loads is employee_id and updated_date as explicitly stated",
+    "Load logic is fully encapsulated in stored procedure sp_mysqltobq_load.sql",
+    "Target BigQuery project is verizon-data, dataset is verizon_data_dea, and the initial target table is employees",
+    "The employees table is the first identified table; additional tables will be agreed upon with the stakeholder before the historical load begins",
+    "The 60-day retention policy applies specifically to the BigQuery target table",
+    "Stakeholder approval from Yash is required before the pipeline progresses from draft to production",
+    "All three tickets (SCRUM-160, SCRUM-161, SCRUM-162) represent a single cohesive pipeline initiative and are treated as one consolidated requirement"
+  ],
+  "inferred_assumptions": [
+    "An orchestration and scheduling tool (e.g., Cloud Composer/Airflow or Cloud Scheduler) will be required to manage hourly and daily load cadences; no specific orchestration framework was named in the requirements",
+    "The deployment environment (dev/staging/production) has not been specified; assumed production-bound given the stakeholder review gate",
+    "Data types are inferred as structured relational tabular data based on the MySQL source schema and BigQuery target structure"
+  ],
+  "acceptance_criteria": [
+    "All agreed-upon MySQL tables are present in BigQuery with verified row counts matching the source",
+    "Historical data is 100% complete in BigQuery before any incremental loads are activated",
+    "Scheduled incremental loads run without failures on the defined hourly or daily cadence per table",
+    "No data duplication or data loss occurs in any incremental update",
+    "Change detection correctly identifies and loads only new or updated records using timestamp or primary key tracking",
+    "Merge key on employee_id and updated_date is applied via sp_mysqltobq_load.sql for all incremental loads",
+    "60-day retention policy is enforced on the target BigQuery table",
+    "Schema compatibility is validated before each load with mismatch events logged",
+    "New column handling strategy is documented and consistently applied across all pipeline loads",
+    "Primary key uniqueness is confirmed post-load for every execution",
+    "Null and datatype constraints are verified against schema definitions after every load",
+    "Row counts match between MySQL and BigQuery for both historical and incremental loads",
+    "Audit logs are complete and accessible after each load execution capturing status, record counts, and timestamps",
+    "Stakeholder dashboards display current load status and full execution history",
+    "Alerts fire promptly on any pipeline failure or data quality violation"
+  ],
+  "expected_outputs": [
+    "Full historical load of MySQL agentichub tables into BigQuery dataset verizon_data_dea with 100% completeness",
+    "Scheduled incremental load pipeline running hourly or daily per table, keeping BigQuery current with the MySQL source",
+    "Stored procedure sp_mysqltobq_load.sql implementing upsert/merge logic on employee_id and updated_date",
+    "Audit log records for every pipeline execution capturing load status, record counts, and timestamps",
+    "Stakeholder-accessible dashboards or log views for independent load success verification without engineering involvement",
+    "Data quality validation reports covering row counts, primary keys, nulls, data types, and schema compatibility for every load",
+    "Documented new MySQL column handling strategy applied consistently across all loads"
+  ],
+  "classification": {
+    "ingestion_type": "batch",
+    "output_type": "pipeline"
+  },
+  "confidence": 0.91,
+  "low_confidence_warning": null,
+  "raw_text": "Ticket: SCRUM-160\nSummary: build mysql to bigquery data ingestion pipeline\nStatus: To Do\nPriority: Medium\nAssignee: Shailendra Singh\nDescription:\nproject name: 5gcore requirement type: new_dvlp stakeholder: yash schedule interval: daily objective design and implement a reliable and scalable pipeline that loads mysql tables into google bigquery to support analytics, reporting, and long-term data storage design and implement a reliable and scalable pipeline to load tables from mysql (agentichub db) into google bigquery (verizon_data_dea dataset). the pipeline must support a one-time full historical load for all identified tables followed by ongoing scheduled incremental loads (hourly or daily per table). this will underpin analytics, reporting, and long-term data storage for the 5gcore programme. source: verizon-data:us-central1:mysql-druid-metadatastore (ip: 34.70.79.163, port: 3306, db: agentichub, table: employees, user: sa). target: bigquery project verizon-data, dataset verizon_data_dea, table employees. load logic via stored procedure sp_mysqltobq_load.sql, merge key on employee_id and updated_date. estimated data size: 5 gb, growth 1 gb/month, retention 60 days. status: draft \u2014 pending stakeholder review. expected outcome all agreed-upon mysql tables loaded into bigquery with 100% historical completeness, reliable scheduled incremental refresh, and full stakeholder visibility into data quality connections and db details source: mysql connection verizon-data:us-central1:mysql-druid-metadatastore, ip: 34.70.79.163, port: 3306, db: agentichub, table: employees, username: sa. target: bigquery project: verizon-data, dataset: verizon_data_dea, table: employees. stored procedure: sp_mysqltobq_load.sql, merge key: employee_id and updated_date. estimated data: 5 gb, growth: 1 gb/month, retention: 60 days acceptance criteria success conditions: all mysql tables present in bigquery with verified row counts historical data 100% complete before incremental loads activate scheduled loads run without failures on defined cadence stakeholder dashboards show load success and audit logs are accessible validation rules: row counts must match between mysql and bigquery for all loads primary key uniqueness must be confirmed post-load null and datatype constraints must be verified schema compatibility must be validated before each load incremental loads must not begin until historical load validation passes new column handling strategy must be documented and implemented\n\n--- Related Tickets (2) ---\n\nRelated Ticket: SCRUM-161\nSummary: implement scheduled incremental load pipeline for mysql to bigquery\nStatus: To Do\nPriority: Medium\nDescription:\nproject name: 5gcore requirement type: new_dvlp stakeholder: yash schedule interval: hourly objective ensure ongoing data freshness in bigquery through reliable scheduled incremental loads from mysql after historical data is fully validated and loaded build the scheduled incremental data load pipeline from mysql to bigquery, to activate only after the full historical load has been validated. use timestamp or primary key-based change tracking to detect new and updated records. implement via stored procedure sp_mysqltobq_load.sql with merge key on employee_id and updated_date. support hourly or daily scheduling per table depending on business requirements. apply the 60-day data retention policy on the target bigquery table and accommodate estimated ongoing data growth of 1 gb/month. expected outcome scheduled incremental loads running reliably hourly or daily, keeping bigquery data current with mysql source with no duplication or data loss connections and db details source: mysql verizon-data:us-central1:mysql-druid-metadatastore, ip: 34.70.79.163, port: 3306, db: agentichub, table: employees, username: sa. target: bigquery project: verizon-data, dataset: verizon_data_dea, table: employees. stored procedure: sp_mysqltobq_load.sql, merge key: employee_id and updated_date. data growth: 1 gb/month, retention: 60 days acceptance criteria success conditions: scheduled jobs run without failures on defined hourly or daily cadence no data duplication or loss in incremental updates pipeline blocked from starting until historical load validation is confirmed change detection correctly identifies and loads only new or updated records validation rules: incremental loads must not begin until historical load validation passes change tracking must use timestamp or primary key to identify modified records merge key on employee_id and updated_date must be applied via sp_mysqltobq_load.sql 60-day retention policy must be enforced on the target table\n\nRelated Ticket: SCRUM-162\nSummary: set up pipeline monitoring, data quality validation, and audit logging\nStatus: To Do\nPriority: Medium\nDescription:\nproject name: 5gcore requirement type: new_dvlp stakeholder: yash schedule interval: daily objective ensure data integrity, pipeline reliability, and stakeholder visibility through comprehensive validation, monitoring, and audit logging across all pipeline stages implement end-to-end data quality validation, monitoring, and audit logging covering both the historical and incremental load stages of the mysql to bigquery pipeline. includes: (1) schema validation before each load with mismatch logging and a defined strategy for handling new mysql columns; (2) row count reconciliation between mysql and bigquery after every load; (3) primary key uniqueness and null/datatype constraint checks; (4) audit log for every load execution capturing status, record counts, and timestamps; (5) dashboards or log access enabling stakeholders to independently review load success without engineering involvement. expected outcome all pipeline loads validated for data quality, complete audit logs available for every execution, and stakeholders can independently confirm load success via dashboards or logs connections and db details source: mysql agentichub.employees. target: bigquery verizon_data_dea.employees. validation covers row counts, primary keys, nulls, data types, and schema compatibility between source and target acceptance criteria success conditions: all validation checks pass without errors on every pipeline run audit logs are complete and accessible after each load execution stakeholder dashboards display current load status and execution history alerts fire promptly on any pipeline failure or data quality violation validation rules: row counts must match between mysql and bigquery after every load primary key uniqueness must be confirmed post-load null and datatype constraints must be verified against schema definitions schema compatibility must be validated before each load with mismatch logging new column handling strategy must be documented and consistently applied across all loads"
+}

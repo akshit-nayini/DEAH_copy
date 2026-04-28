@@ -1,0 +1,112 @@
+<?xml version="1.0" ?>
+<mxfile host="mermaid2drawio" modified="" agent="mermaid2drawio/1.0" version="21.0.0" type="device">
+  <diagram name="Dimensional Model Diagram" id="66d23842ab21">
+    <mxGraphModel dx="0" dy="0" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="5e7e19d30ca6" value="" style="shape=table;startSize=0;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=0;strokeColor=#6c8ebf;fillColor=#FFFFFF;rounded=1;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="220" height="244" as="geometry"/>
+        </mxCell>
+        <mxCell id="5d45b69eaba9" value="dim_customer" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#dae8fc;top=0;left=0;bottom=0;right=0;fontStyle=1;fontSize=13;strokeColor=#6c8ebf;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="0" width="220" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="86bad0581570" value="PK  NUMBER  customer_sk  -- Surrogate key (hash)" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;fontStyle=5;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="32" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="57045ac8e805" value="VARCHAR  customer_nk  -- Natural key (email)" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="58" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4df35902aa5" value="VARCHAR  first_name  -- Tracked attribute" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="84" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="e00109d11637" value="VARCHAR  last_name  -- Tracked attribute" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="110" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="bd48f4183abc" value="VARCHAR  email  -- Tracked attribute" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="136" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="756297bc4ed1" value="NUMBER  lifetime_value  -- Tracked metric" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="162" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="61a134ef33d4" value="VARCHAR  customer_segment  -- RFM segment" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="188" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="94516cb317db" value="BOOLEAN  is_current  -- SCD2 current flag" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="5e7e19d30ca6">
+          <mxGeometry x="0" y="214" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="11097b901653" value="" style="shape=table;startSize=0;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=0;strokeColor=#6c8ebf;fillColor=#FFFFFF;rounded=1;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="60" width="220" height="192" as="geometry"/>
+        </mxCell>
+        <mxCell id="86813c344812" value="fact_order" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#dae8fc;top=0;left=0;bottom=0;right=0;fontStyle=1;fontSize=13;strokeColor=#6c8ebf;" vertex="1" parent="11097b901653">
+          <mxGeometry x="0" y="0" width="220" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="bd6b840ca854" value="PK  NUMBER  order_line_sk  -- Surrogate key" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;fontStyle=5;" vertex="1" parent="11097b901653">
+          <mxGeometry x="0" y="32" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="546b2d8055d3" value="FK  NUMBER  customer_sk  -- -&gt; dim_customer" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="11097b901653">
+          <mxGeometry x="0" y="58" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="115deb3c19a4" value="DATE  order_date  -- Transaction date" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="11097b901653">
+          <mxGeometry x="0" y="84" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="a984136e6196" value="NUMBER  quantity  -- Measure" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="11097b901653">
+          <mxGeometry x="0" y="110" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="15ce8d05f299" value="NUMBER  unit_price  -- Measure" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="11097b901653">
+          <mxGeometry x="0" y="136" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="4bb967a89150" value="NUMBER  line_total  -- Derived measure" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="11097b901653">
+          <mxGeometry x="0" y="162" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="acb954fab939" value="" style="shape=table;startSize=0;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=0;strokeColor=#6c8ebf;fillColor=#FFFFFF;rounded=1;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="60" width="220" height="166" as="geometry"/>
+        </mxCell>
+        <mxCell id="ac00e9405cdb" value="fact_support_interaction" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#dae8fc;top=0;left=0;bottom=0;right=0;fontStyle=1;fontSize=13;strokeColor=#6c8ebf;" vertex="1" parent="acb954fab939">
+          <mxGeometry x="0" y="0" width="220" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="187b3b6d5cfb" value="PK  NUMBER  interaction_sk  -- Surrogate key" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;fontStyle=5;" vertex="1" parent="acb954fab939">
+          <mxGeometry x="0" y="32" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="753e5ee51e42" value="FK  NUMBER  customer_sk  -- -&gt; dim_customer" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="acb954fab939">
+          <mxGeometry x="0" y="58" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="2b89f98cee77" value="DATE  interaction_date  -- Event date" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="acb954fab939">
+          <mxGeometry x="0" y="84" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="71123f5099c6" value="VARCHAR  channel  -- Interaction channel" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="acb954fab939">
+          <mxGeometry x="0" y="110" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="66de5ab3da7d" value="VARCHAR  resolution_status  -- Ticket outcome" style="shape=partialRectangle;overflow=hidden;connectable=0;fillColor=#FFFFFF;top=0;left=0;bottom=0;right=0;fontFamily=Courier New;fontSize=11;align=left;spacingLeft=8;strokeColor=#CCCCCC;" vertex="1" parent="acb954fab939">
+          <mxGeometry x="0" y="136" width="220" height="26" as="geometry"/>
+        </mxCell>
+        <mxCell id="d112966dc854" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;fontColor=#333333;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=1;" edge="1" parent="1" source="5e7e19d30ca6" target="11097b901653" value="1:M">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="44f339c147f0" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#666666;fontStyle=1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="d112966dc854">
+          <mxGeometry x="-0.8" y="0" relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d4dbfbbcf420" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#666666;fontStyle=1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="d112966dc854">
+          <mxGeometry x="0.8" y="0" relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="581c2ddb8a26" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;fontColor=#333333;fontSize=11;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=1;" edge="1" parent="1" source="5e7e19d30ca6" target="acb954fab939" value="1:M">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="f4267bb9decd" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#666666;fontStyle=1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="581c2ddb8a26">
+          <mxGeometry x="-0.8" y="0" relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4f33334c2035" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#666666;fontStyle=1;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="581c2ddb8a26">
+          <mxGeometry x="0.8" y="0" relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

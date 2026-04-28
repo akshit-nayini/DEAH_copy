@@ -1,0 +1,46 @@
+TABLE_NAME,COLUMN_NAME,DATA_TYPE,LENGTH,PRECISION,SCALE,NULLABLE,PRIMARY_KEY,DEFAULT_VALUE,DESCRIPTION
+PAGE_VIEWS,EVENT_ID,STRING,36,,,NOT NULL,YES,,UUID - unique identifier for each page view event
+PAGE_VIEWS,SESSION_ID,STRING,36,,,NOT NULL,,,Session the page view belongs to
+PAGE_VIEWS,USER_ID,STRING,36,,,,,,Authenticated user ID - null for anonymous
+PAGE_VIEWS,ANONYMOUS_ID,STRING,36,,,NOT NULL,,,Anonymous visitor ID from cookie
+PAGE_VIEWS,PAGE_URL,STRING,2048,,,NOT NULL,,,Full URL of the viewed page
+PAGE_VIEWS,PAGE_TITLE,STRING,500,,,,,,HTML title of the page
+PAGE_VIEWS,REFERRER_URL,STRING,2048,,,,,,Referring URL
+PAGE_VIEWS,UTM_SOURCE,STRING,200,,,,,,UTM campaign source
+PAGE_VIEWS,UTM_MEDIUM,STRING,200,,,,,,UTM campaign medium
+PAGE_VIEWS,UTM_CAMPAIGN,STRING,200,,,,,,UTM campaign name
+PAGE_VIEWS,DEVICE_TYPE,STRING,20,,,,,,desktop / mobile / tablet
+PAGE_VIEWS,BROWSER,STRING,100,,,,,,Browser name and version
+PAGE_VIEWS,OS,STRING,100,,,,,,Operating system
+PAGE_VIEWS,COUNTRY_CODE,STRING,2,,,,,,ISO 3166-1 alpha-2 country code
+PAGE_VIEWS,EVENT_TIMESTAMP,TIMESTAMP,,,,NOT NULL,,,When the event occurred on the client
+PAGE_VIEWS,INGESTED_AT,TIMESTAMP,,,,NOT NULL,,,When Dataflow wrote to BigQuery
+USER_EVENTS,EVENT_ID,STRING,36,,,NOT NULL,YES,,UUID - unique identifier for each user event
+USER_EVENTS,SESSION_ID,STRING,36,,,NOT NULL,,,Session the event belongs to
+USER_EVENTS,USER_ID,STRING,36,,,,,,Authenticated user ID - null for anonymous
+USER_EVENTS,ANONYMOUS_ID,STRING,36,,,NOT NULL,,,Anonymous visitor ID from cookie
+USER_EVENTS,EVENT_TYPE,STRING,100,,,NOT NULL,,,e.g. button_click / form_submit / video_play
+USER_EVENTS,EVENT_CATEGORY,STRING,100,,,,,,Grouping category for the event
+USER_EVENTS,EVENT_LABEL,STRING,300,,,,,,Human-readable label for the event
+USER_EVENTS,PAGE_URL,STRING,2048,,,NOT NULL,,,Page where event occurred
+USER_EVENTS,ELEMENT_ID,STRING,200,,,,,,DOM element ID that triggered the event
+USER_EVENTS,EVENT_VALUE,FLOAT,,,,,,,Numeric value associated with the event
+USER_EVENTS,PROPERTIES,STRING,,,,,,,JSON string of additional event properties
+USER_EVENTS,DEVICE_TYPE,STRING,20,,,,,,desktop / mobile / tablet
+USER_EVENTS,EVENT_TIMESTAMP,TIMESTAMP,,,,NOT NULL,,,When the event occurred on the client
+USER_EVENTS,INGESTED_AT,TIMESTAMP,,,,NOT NULL,,,When Dataflow wrote to BigQuery
+SESSIONS,SESSION_ID,STRING,36,,,NOT NULL,YES,,UUID - unique session identifier
+SESSIONS,USER_ID,STRING,36,,,,,,Authenticated user ID - null for anonymous
+SESSIONS,ANONYMOUS_ID,STRING,36,,,NOT NULL,,,Anonymous visitor ID from cookie
+SESSIONS,SESSION_START,TIMESTAMP,,,,NOT NULL,,,Timestamp of first event in session
+SESSIONS,SESSION_END,TIMESTAMP,,,,,,, Timestamp of last event in session
+SESSIONS,DURATION_SECONDS,INTEGER,,,,,,,Total session duration in seconds
+SESSIONS,PAGE_VIEW_COUNT,INTEGER,,,,,,,Number of page views in session
+SESSIONS,EVENT_COUNT,INTEGER,,,,,,,Number of user events in session
+SESSIONS,LANDING_PAGE,STRING,2048,,,,,,First page viewed in session
+SESSIONS,EXIT_PAGE,STRING,2048,,,,,,Last page viewed in session
+SESSIONS,CHANNEL,STRING,100,,,,,,Acquisition channel e.g. organic / paid / email
+SESSIONS,COUNTRY_CODE,STRING,2,,,,,,ISO 3166-1 alpha-2 country code
+SESSIONS,DEVICE_TYPE,STRING,20,,,,,,desktop / mobile / tablet
+SESSIONS,IS_BOUNCE,BOOLEAN,,,,,,,FALSE,True if session had only one page view
+SESSIONS,INGESTED_AT,TIMESTAMP,,,,NOT NULL,,,When Dataflow wrote to BigQuery

@@ -1,0 +1,55 @@
+# .github/workflows/git_processor.yml
+#
+# Repo: ahemadshaik/DEAH
+# Agent: core/testing/agents/git_processor/git_processor.py
+
+name: "Git Processor v9 - Certify & Merge"
+
+on:
+  push:
+    paths:
+      - "core/testing/agents/validator/output/**"
+  pull_request:
+    paths:
+      - "core/testing/agents/validator/output/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch || 'main' }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install PyGithub pandas openpyxl
+
+      - name: Debug secrets
+        run: |
+          if [ -n "${{ secrets.TEAMS_WEBHOOK_URL }}" ]; then
+            echo "TEAMS_WEBHOOK_URL secret: SET"
+          else
+            echo "TEAMS_WEBHOOK_URL secret: NOT SET"
+          fi
+
+      - name: Run agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAMS_WEBHOOK_URL: "${{ secrets.TEAMS_WEBHOOK_URL }}"
+        run: |
+          echo "TEAMS_WEBHOOK_URL env length: ${#TEAMS_WEBHOOK_URL}"
+          python core/testing/agents/git_processor/git_processor.py \
+            --repo "${{ github.repository }}"

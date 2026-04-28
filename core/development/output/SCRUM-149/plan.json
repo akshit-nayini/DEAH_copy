@@ -1,0 +1,178 @@
+{
+  "request_id": "SCRUM-149",
+  "sprint": "",
+  "project": "5gcore",
+  "summary": "This pipeline ingests the MySQL source table `agentichub.employees` (host 34.70.79.163:3306, instance verizon-data:us-central1:mysql-druid-metadatastore) into BigQuery dataset `verizon_data_dea` using a Cloud Composer 2 batch architecture with native Airflow operators and GCS staging. A one-time historical load DAG (`dag_5gcore_employees_historical_load`) performs a full extraction in configurable page-size chunks (default 100,000 rows) via `MySQLToGCSOperator`, writes CSV/Avro files to `gs://verizon-data-etl-staging/employees/` (1-day lifecycle), loads them into transient table `verizon_data_dea.employees_staging` via `GCSToBigQueryOperator` (WRITE_TRUNCATE), then executes BigQuery stored procedure `sp_mysqltobq_load` to MERGE on composite key `(employee_id, updated_date)` into the target table `verizon_data_dea.employees` (DAY-partitioned on `updated_date`, 60-day partition expiry, clustered on `employee_id`, `department_id`, `job_id`, `status`). Post-load SQL assertion tasks validate row-count reconciliation, composite PK uniqueness, and NOT NULL constraints. A formal sign-off gate (`historical_load_signoff_status = APPROVED` Airflow Variable) must be set before the daily incremental DAG (`dag_5gcore_employees_incremental_load`, cron `0 2 * * *`) activates; it applies a `WHERE updated_date > last_successful_run` watermark filter on each run and updates the watermark on success. An audit table `verizon_data_dea.pipeline_audit_log` receives an execution record on every DAG run regardless of outcome (trigger_rule=ALL_DONE). The 14-column mapping (source MySQL uppercase columns \u2192 lowercase BigQuery targets) includes CAST-based transformations and covers all 14 data rows from the mapping CSV.",
+  "services": [
+    {
+      "name": "Cloud Composer 2",
+      "connection": "Apache Airflow 2.x; apache-airflow-providers-google installed",
+      "type": "orchestration"
+    },
+    {
+      "name": "Cloud SQL MySQL",
+      "connection": "host=34.70.79.163, port=3306, database=agentichub, user=sa, instance_connection_name=verizon-data:us-central1:mysql-druid-metadatastore",
+      "type": "storage"
+    },
+    {
+      "name": "Google Cloud Storage",
+      "connection": "gs://verizon-data-etl-staging/employees/",
+      "type": "storage"
+    },
+    {
+      "name": "BigQuery",
+      "connection": "dataset=verizon_data_dea",
+      "type": "warehouse"
+    },
+    {
+      "name": "Cloud Monitoring",
+      "connection": "",
+      "type": "orchestration"
+    },
+    {
+      "name": "Cloud Logging",
+      "connection": "",
+      "type": "orchestration"
+    }
+  ],
+  "tables": [
+    {
+      "name": "verizon_data_dea.employees",
+      "layer": "staging",
+      "type": "CREATE"
+    },
+    {
+      "name": "verizon_data_dea.employees_staging",
+      "layer": "staging",
+      "type": "CREATE"
+    },
+    {
+      "name": "verizon_data_dea.pipeline_audit_log",
+      "layer": "core",
+      "type": "CREATE"
+    }
+  ],
+  "audit_table": {
+    "enabled": true,
+    "name": "pipeline_audit_log",
+    "dataset": "verizon_data_dea",
+    "columns": [
+      "run_id",
+      "dag_id",
+      "execution_timestamp",
+      "status",
+      "rows_extracted",
+      "rows_loaded",
+      "error_message"
+    ]
+  },
+  "store_proc": {
+    "name": "sp_mysqltobq_load",
+    "description": "BigQuery stored procedure in dataset verizon_data_dea that executes a MERGE from verizon_data_dea.employees_staging into verizon_data_dea.employees on composite merge key (employee_id, updated_date); WHEN MATCHED UPDATE all non-key columns; WHEN NOT MATCHED BY TARGET INSERT all 15 columns"
+  },
+  "artifacts_to_generate": [
+    {
+      "file_name": "ddl_verizon_data_dea_employees.sql",
+      "type": "DDL",
+      "reason": "CREATE OR REPLACE TABLE for verizon_data_dea.employees \u2014 14 mapped columns plus partition on updated_date (DAY, 60-day expiry), clustering on employee_id/department_id/job_id/status"
+    },
+    {
+      "file_name": "ddl_verizon_data_dea_employees_staging.sql",
+      "type": "DDL",
+      "reason": "CREATE OR REPLACE TABLE for verizon_data_dea.employees_staging \u2014 mirrors the 14 mapped columns, no partitioning or clustering; truncated and reloaded on every DAG execution"
+    },
+    {
+      "file_name": "ddl_verizon_data_dea_pipeline_audit_log.sql",
+      "type": "DDL",
+      "reason": "CREATE OR REPLACE TABLE for verizon_data_dea.pipeline_audit_log with columns run_id, dag_id, execution_timestamp, status, rows_extracted, rows_loaded, error_message as specified in Phase 2 Step 3"
+    },
+    {
+      "file_name": "sp_mysqltobq_load.sql",
+      "type": "SP",
+      "reason": "BigQuery stored procedure implementing MERGE from employees_staging into employees on composite key (employee_id, updated_date) \u2014 WHEN MATCHED UPDATE non-key columns, WHEN NOT MATCHED INSERT all 14 mapped columns"
+    },
+    {
+      "file_name": "dag_5gcore_employees_historical_load.py",
+      "type": "DAG",
+      "reason": "Airflow DAG for one-time historical full load: schema_drift_check \u2192 extract_to_gcs \u2192 load_gcs_to_staging \u2192 run_merge_procedure \u2192 row_count_reconciliation \u2192 pk_uniqueness_check \u2192 null_constraint_check \u2192 write_audit_log (trigger_rule=ALL_DONE)"
+    },
+    {
+      "file_name": "dag_5gcore_employees_incremental_load.py",
+      "type": "DAG",
+      "reason": "Airflow DAG for daily incremental load (cron 0 2 * * *): sign_off_gate \u2192 schema_drift_check \u2192 extract_incremental_to_gcs \u2192 load_gcs_to_staging \u2192 run_merge_procedure \u2192 row_count_reconciliation \u2192 pk_uniqueness_check \u2192 null_constraint_check \u2192 update_watermark \u2192 write_audit_log (trigger_rule=ALL_DONE)"
+    }
+  ],
+  "patterns": [
+    "Batch ELT \u2014 MySQL \u2192 GCS staging (1-day lifecycle) \u2192 BigQuery transient staging table (WRITE_TRUNCATE) \u2192 BigQuery MERGE stored procedure \u2192 partitioned/clustered target table",
+    "Composite merge key: (employee_id, updated_date)",
+    "Incremental watermark via Airflow Variable last_successful_run (WHERE updated_date > last_successful_run)",
+    "Historical load sign-off gate via ShortCircuitOperator reading Airflow Variable historical_load_signoff_status = APPROVED",
+    "Schema drift detection via pre-load MySQL INFORMATION_SCHEMA.COLUMNS diff against registered BigQuery schema",
+    "Post-load SQL assertions: row-count reconciliation, composite PK uniqueness, NOT NULL constraint enforcement",
+    "Chunked extraction: configurable page_size Airflow Variable (default 100,000 rows) with exponential backoff retry",
+    "Audit logging to verizon_data_dea.pipeline_audit_log on every execution (trigger_rule=ALL_DONE)",
+    "NULL partition handling: updated_date IS NULL rows land in __NULL__ partition"
+  ],
+  "pii_columns": [
+    "verizon_data_dea.employees.first_name \u2014 PII",
+    "verizon_data_dea.employees.last_name \u2014 PII",
+    "verizon_data_dea.employees.email \u2014 PII",
+    "verizon_data_dea.employees.phone_number \u2014 PII",
+    "verizon_data_dea.employees_staging.first_name \u2014 PII",
+    "verizon_data_dea.employees_staging.last_name \u2014 PII",
+    "verizon_data_dea.employees_staging.email \u2014 PII",
+    "verizon_data_dea.employees_staging.phone_number \u2014 PII"
+  ],
+  "clarifying_questions": [
+    "[IMPORTANT] Credentials / secret management \u2014 how are MySQL credentials for user `sa` provided at runtime (Airflow connection ID, Secret Manager, env vars)? \u2192 The document states username=sa and host/port but does not specify how the password or connection secret is stored or referenced by the MySQLToGCSOperator at runtime.",
+    "[IMPORTANT] Historical DAG schedule \u2014 is `dag_5gcore_employees_historical_load` schedule_interval set to `@once` or `None`, or triggered exclusively via manual trigger? \u2192 The document describes it as a one-time execution but does not explicitly state the Airflow schedule_interval value for this DAG.",
+    "[IMPORTANT] GCS staging file format \u2014 should `MySQLToGCSOperator` write CSV or Avro files to `gs://verizon-data-etl-staging/employees/`? \u2192 The document mentions both 'CSV/Avro' in several places but does not make a definitive selection between the two formats."
+  ],
+  "open_blockers": [
+    "Stored Procedure Existence \u2014 Is `sp_mysqltobq_load.sql` already authored, tested, and available in a version-controlled repository, or does it need to be designed and implemented as part of this engagement? Its existence is assumed but not confirmed in the provided requirements.",
+    "Source Schema Confirmation \u2014 The exact column names, data types, nullable flags, approximate row count, and average row width of `agentichub.employees` have not been independently confirmed outside the mapping CSV; this information is required to configure the MySQLToGCSOperator schema parameter and establish the row-count reconciliation baseline.",
+    "PII Compliance Scope \u2014 Does the employee data require column-level BigQuery security policies, BigQuery data masking rules, or CMEK encryption beyond dataset-level IAM access control? The compliance field is currently null and the PII handling scope is unconfirmed."
+  ],
+  "connection_details": [
+    {
+      "service": "Cloud SQL MySQL",
+      "type": "jdbc",
+      "value": "34.70.79.163:3306",
+      "env_var": ""
+    },
+    {
+      "service": "Cloud SQL MySQL \u2014 instance connection name",
+      "type": "jdbc",
+      "value": "verizon-data:us-central1:mysql-druid-metadatastore",
+      "env_var": ""
+    },
+    {
+      "service": "Google Cloud Storage \u2014 staging bucket",
+      "type": "gcs",
+      "value": "gs://verizon-data-etl-staging/employees/",
+      "env_var": ""
+    },
+    {
+      "service": "Cloud SQL MySQL \u2014 credentials",
+      "type": "jdbc",
+      "value": "<SECRET>",
+      "env_var": "sa password \u2014 storage mechanism unconfirmed; see clarifying question"
+    }
+  ],
+  "logging_mechanisms": [
+    {
+      "type": "BigQuery",
+      "description": "Execution outcome records written to verizon_data_dea.pipeline_audit_log on every DAG run (trigger_rule=ALL_DONE), capturing run_id, dag_id, execution_timestamp, status, rows_extracted, rows_loaded, error_message"
+    },
+    {
+      "type": "CloudLogging",
+      "description": "Schema drift check task logs detailed column diff to Cloud Logging on mismatch; MySQLToGCSOperator chunk-by-chunk progress also observable via Cloud Logging as stated in Phase 5 Step 1"
+    }
+  ],
+  "alerting_mechanisms": [
+    {
+      "type": "CloudMonitoring",
+      "description": "Cloud Monitoring dashboards used for operational pipeline health monitoring as referenced in Phase 5 Step 1, Phase 8 Step 2, and the architecture monitoring layer"
+    }
+  ]
+}

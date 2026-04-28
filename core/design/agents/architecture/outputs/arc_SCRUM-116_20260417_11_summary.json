@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "Product Catalog Analytics Platform",
+  "request_type": "new development",
+  "selected_architecture": "Cloud Composer Native Batch Pipeline (PostgresHook \u2192 GCS \u2192 BigQuery MERGE)",
+  "pattern_type": "batch",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Cloud Composer 2 \u2014 Airflow PostgresHook + PythonOperator (psycopg2 chunked reads)",
+    "processing": "BigQuery \u2014 LOAD JOB + MERGE SQL via BigQueryInsertJobOperator",
+    "storage": "GCS (Parquet staging, 7-day lifecycle) + BigQuery verizon-data.verizon_catalog_deah",
+    "orchestration": "Cloud Composer 2",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Airflow UI (DAG/task-level SLA callbacks)",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: Cloud Composer 2 DAG executes nightly at 01:00 AM UTC. On first run, a full historical extraction of all 4 tables (~20 GB) is performed via Airflow PostgresHook (psycopg2) using chunked cursor reads to protect the operational source DB. On subsequent daily runs, watermark-based incremental extraction using MAX(updated_at) stored as Airflow XCom is applied to products and inventory; categories and suppliers undergo a full daily reload. Extracted batches are serialized as Parquet files and written to a dedicated GCS staging bucket partitioned by table name and execution_date.",
+    "2. Processing: A BigQueryInsertJobOperator executes a BigQuery LOAD JOB from GCS Parquet files into a transient staging table (_stg_<table>) per source. A parameterized BigQuery MERGE statement then UPSERTs records from each staging table into the corresponding target table keyed on the source primary key, handling both net-new inserts and late-arriving updates atomically. A reconciliation task queries COUNT(*) from PostgreSQL via PostgresHook and from the BigQuery target table after each load; mismatches trigger a DAG failure and PagerDuty/email alert. A final Airflow task writes run metadata (run_id, table_name, execution_date, status, source_count, target_count, duration_seconds, error_message) to pipeline_audit.pipeline_run_log via BigQueryInsertJobOperator.",
+    "3. Storage: GCS staging bucket holds intermediate Parquet files with a 7-day object lifecycle policy that auto-deletes files after confirmed successful load, preventing unbounded accumulation. BigQuery dataset verizon_catalog_deah in project verizon-data stores the four production tables: products, categories, suppliers, inventory \u2014 each partitioned by ingestion_date (DATE) and clustered on primary key columns for downstream query efficiency and cost optimization. pipeline_audit.pipeline_run_log captures execution audit history. Transient _stg_ staging tables are truncated after each successful MERGE.",
+    "4. Consumption: Downstream BI tools (Looker, Looker Studio, or equivalent) and ad-hoc BigQuery SQL clients access verizon_catalog_deah directly for product performance reporting and inventory trend analysis. All analytical consumers read from BigQuery; no additional serving layer is required at current data volumes."
+  ],
+  "key_constraints": [
+    "functional_requirements[0]: Perform a full historical load of all 4 source tables (products, categories, suppliers, inventory) on the first pipeline run",
+    "functional_requirements[1]: Perform daily incremental sync using updated_at watermark for products and inventory tables",
+    "functional_requirements[2]: Perform a full daily reload for categories and suppliers as small reference tables",
+    "functional_requirements[3]: Apply UPSERT logic on primary key in BigQuery to handle late-arriving updates",
+    "functional_requirements[4] / non_functional.performance: Airflow DAG must complete before 03:00 AM UTC every day"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Network Connectivity",
+      "mitigation": "Provision Cloud VPN with BGP routing or Cloud Interconnect with redundant tunnels for reliable private connectivity. Configure Airflow PostgresHook retry with exponential backoff (3 retries, 60-second delay). Implement Cloud Monitoring uptime checks on catalog-db.corp.com:5432 with alerting thresholds set to fire 30 minutes before the pipeline execution window begins at 01:00 AM UTC so on-call engineers can investigate proactively."
+    },
+    {
+      "risk": "Schema Drift",
+      "mitigation": "Implement a pre-extraction schema fingerprint check as the first DAG task: query PostgreSQL information_schema.columns for all 4 tables and compare column names and data types against a stored baseline snapshot; fail the DAG with a P1 alert if drift is detected before any extraction begins. Establish a formal change management process requiring data engineering sign-off on DDL changes to any of the 4 source tables."
+    },
+    {
+      "risk": "Incremental Completeness \u2014 Hard Deletes",
+      "mitigation": "Explicitly document the hard-delete limitation in the data dictionary and data SLA agreement. Confirm with stakeholder John whether hard-delete propagation is a business requirement. If required, evaluate either (a) weekly full reload of products and inventory as a reconciliation cadence or (b) enabling PostgreSQL logical replication and introducing a CDC layer (e.g., Debezium) in a future platform phase. Implement a monthly row-count trend alert that flags anomalous growth deceleration as a proxy indicator of potential delete accumulation."
+    }
+  ],
+  "scoring_one_liner": "Scored 8.05/10 \u2014 Cost 8, Scalability 7, Complexity 9, Latency 8, Operability 9. Trade-offs accepted: The lower Scalability score (7/10) relative to Dataflow Option 2 (9/10) is explicitly accepted for three reasons: (1) Current and 12-month projected volumes (~500MB/day) are comfortably within Airflow worker extraction capacity with appropriate chunking, leaving headroom before any SLA risk materializes. (2) Vertical scaling of the Cloud Composer environment (increasing worker CPU/RAM or worker count) is a straightforward, low-disruption operational lever available before a full architectural pivot to Dataflow is warranted. (3) The cost and complexity savings from eliminating Dataflow Flex Template development, Artifact Registry container management, and Beam job monitoring deliver immediate, tangible value that outweighs a marginal scalability hedge at sub-1GB daily incremental volumes. Hard-delete non-propagation is also accepted as a known limitation pending stakeholder confirmation of whether delete propagation is a business requirement.",
+  "open_blockers": [
+    "What is the precise network connectivity mechanism between the Cloud Composer worker environment and catalog-db.corp.com:5432 \u2014 Cloud VPN, Cloud Interconnect, or public internet with TLS? This determines firewall rule scope, connectivity SLA, and whether a VPC-native Composer environment is required.",
+    "Is hard-delete propagation required? If records are physically deleted from products, inventory, categories, or suppliers in PostgreSQL, must those deletes be reflected in the corresponding BigQuery target tables? The current watermark-based incremental design cannot detect hard deletes; this determines whether a CDC mechanism is required in scope or a future phase.",
+    "What is the target GCP region for all pipeline resources (Cloud Composer environment, GCS staging bucket, BigQuery dataset verizon_catalog_deah)? Co-locating all resources in a single region eliminates cross-region GCS-to-BigQuery data transfer charges and minimizes latency within the processing pipeline."
+  ],
+  "ticket_id": "SCRUM-116"
+}

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Tools</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+      --border: #30363d; --blue: #1f6feb; --text: #e6edf3;
+      --muted: #8b949e; --red: #f85149; --yellow: #d29922;
+      --green: #3fb950; --purple: #bc8cff; --orange: #f0883e;
+    }
+    body { background:var(--bg); color:var(--text);
+           font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+           min-height:100vh; display:flex; flex-direction:column; }
+
+    /* ── Header ── */
+    header { background:var(--surface); border-bottom:1px solid var(--border);
+             padding:14px 28px; display:flex; align-items:center; gap:12px; }
+    .logo { width:30px;height:30px;background:var(--blue);border-radius:8px;
+            display:flex;align-items:center;justify-content:center;font-size:16px; }
+    header h1 { font-size:17px;font-weight:600; }
+    header small { color:var(--muted);font-size:12px;margin-left:4px; }
+
+    /* ── Tool switcher ── */
+    .tool-bar { background:var(--surface2); border-bottom:1px solid var(--border);
+                padding:0 28px; display:flex; gap:0; }
+    .tool-tab { padding:13px 20px; font-size:13px; font-weight:500; color:var(--muted);
+                cursor:pointer; border-bottom:2px solid transparent;
+                transition:all .15s; display:flex; align-items:center; gap:7px; }
+    .tool-tab:hover:not(.active) { color:var(--text); }
+    .tool-tab.active { color:var(--text); border-bottom-color:var(--blue); }
+    .tool-tab .dot { width:7px;height:7px;border-radius:50%;background:var(--muted); }
+    .tool-tab.active .dot { background:var(--blue); }
+    #tab-analyzer .dot { background:var(--purple); }
+    #tab-tree     .dot { background:var(--green); }
+    #tab-release  .dot { background:var(--orange); }
+
+    /* ── Layout ── */
+    .container { display:grid; grid-template-columns:360px 1fr;
+                 flex:1; height:calc(100vh - 105px); }
+
+    /* ── Sidebar ── */
+    aside { background:var(--surface); border-right:1px solid var(--border);
+            padding:20px 18px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; }
+
+    .section-lbl { font-size:10px;font-weight:700;text-transform:uppercase;
+                   letter-spacing:.08em;color:var(--muted);margin-bottom:8px; }
+
+    .field { display:flex; flex-direction:column; gap:5px; }
+    label { font-size:13px;font-weight:500; }
+    .badge { font-size:10px;background:var(--surface2);border:1px solid var(--border);
+             color:var(--muted);padding:1px 6px;border-radius:10px;margin-left:5px;font-weight:400; }
+    input { background:var(--bg);border:1px solid var(--border);border-radius:6px;
+            color:var(--text);font-size:13px;padding:7px 11px;width:100%;
+            outline:none;transition:border-color .15s;font-family:inherit; }
+    input:focus { border-color:var(--blue); }
+    input::placeholder { color:var(--muted); }
+    .hint { font-size:11px;color:var(--muted); }
+    hr { border:none;border-top:1px solid var(--border); }
+
+    /* Scope toggle */
+    .toggle-row { display:flex;gap:6px; }
+    .toggle-btn { flex:1;padding:6px 0;font-size:12px;font-weight:500;border-radius:5px;
+                  border:1px solid var(--border);background:var(--bg);color:var(--muted);
+                  cursor:pointer;transition:all .15s;text-align:center; }
+    .toggle-btn.active { background:var(--blue);border-color:var(--blue);color:#fff; }
+    .folder-input { display:none;flex-direction:column;gap:5px;margin-top:4px; }
+    .folder-input.visible { display:flex; }
+
+    /* Tool-specific sections */
+    .tool-section { display:none; flex-direction:column; gap:16px; }
+    .tool-section.active { display:flex; }
+
+    /* Buttons */
+    .btn-run { background:#238636;border:none;border-radius:6px;color:#fff;
+               font-size:13px;font-weight:600;padding:9px 14px;cursor:pointer;
+               width:100%;transition:background .15s;display:flex;
+               align-items:center;justify-content:center;gap:7px; }
+    .btn-run:hover:not(:disabled) { background:#2ea043; }
+    .btn-run:disabled { opacity:.5;cursor:not-allowed; }
+    .btn-stop { background:var(--red);border:none;border-radius:6px;color:#fff;
+                font-size:13px;font-weight:600;padding:9px 14px;cursor:pointer;
+                width:100%;display:flex;align-items:center;justify-content:center;gap:7px;
+                transition:opacity .15s; }
+    .btn-stop:disabled { opacity:.35;cursor:not-allowed; }
+
+    /* Stats */
+    .stats { display:grid;grid-template-columns:repeat(3,1fr);gap:8px; }
+    .stat { background:var(--bg);border:1px solid var(--border);border-radius:6px;
+            padding:9px;text-align:center; }
+    .stat .n { font-size:20px;font-weight:700;color:var(--blue); }
+    .stat .l { font-size:10px;color:var(--muted);margin-top:2px; }
+
+    /* ── Main panel ── */
+    main { display:flex; flex-direction:column; overflow:hidden; }
+    .tabs { display:flex;border-bottom:1px solid var(--border);
+            background:var(--surface);padding:0 24px; }
+    .tab { padding:11px 15px;font-size:13px;color:var(--muted);cursor:pointer;
+           border-bottom:2px solid transparent;transition:all .15s;user-select:none; }
+    .tab.active { color:var(--text);border-bottom-color:var(--blue); }
+    .tab:hover:not(.active) { color:var(--text); }
+
+    .panel { display:none;flex:1;overflow:hidden;flex-direction:column; }
+    .panel.active { display:flex; }
+
+    /* Progress bar */
+    #progressBar { height:3px;background:var(--border); }
+    #progressFill { height:100%;background:var(--blue);transition:width .3s;width:0; }
+
+    /* Log */
+    .log-wrap { flex:1;overflow-y:auto;padding:14px 22px;background:var(--bg); }
+    .empty-state { height:100%;display:flex;flex-direction:column;
+                   align-items:center;justify-content:center;gap:10px;color:var(--muted); }
+    .empty-state .icon { font-size:44px;opacity:.25; }
+    .empty-state p { font-size:13px; }
+    .log-entry { font-size:12px;font-family:"Cascadia Code","Fira Code",Consolas,monospace;
+                 padding:2px 0;display:flex;gap:10px;line-height:1.6;
+                 border-bottom:1px solid rgba(255,255,255,.03); }
+    .log-entry .ts { color:var(--muted);flex-shrink:0; }
+    .log-entry.info    .msg { color:var(--text); }
+    .log-entry.success .msg { color:var(--green); }
+    .log-entry.warn    .msg { color:var(--yellow); }
+    .log-entry.error   .msg { color:var(--red); }
+    .log-entry.file    .msg { color:var(--purple); }
+    .log-entry.done    .msg { color:var(--green); }
+    .log-entry.skip    .msg { color:var(--muted); }
+
+    /* Output */
+    .out-toolbar { background:var(--surface);border-bottom:1px solid var(--border);
+                   padding:7px 22px;display:flex;align-items:center;gap:8px; }
+    .tbtn { background:var(--surface2);border:1px solid var(--border);border-radius:5px;
+            color:var(--text);font-size:12px;padding:4px 11px;cursor:pointer;transition:background .15s; }
+    .tbtn:hover:not(:disabled) { background:var(--border); }
+    .tbtn:disabled { opacity:.4;cursor:not-allowed; }
+    .tinfo { font-size:12px;color:var(--muted);margin-left:auto; }
+    #outWrap { flex:1;overflow-y:auto;padding:18px 22px;background:var(--bg); }
+    #outContent { font-family:"Cascadia Code","Fira Code",Consolas,monospace;
+                  font-size:12px;line-height:1.7;white-space:pre-wrap;color:var(--text); }
+
+    /* Spinner */
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner { width:13px;height:13px;border:2px solid rgba(255,255,255,.2);
+               border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite; }
+
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border);border-radius:3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">&#128202;</div>
+  <h1>GitHub Tools</h1>
+  <small>powered by Claude AI</small>
+</header>
+
+<!-- Tool switcher -->
+<nav class="tool-bar">
+  <div class="tool-tab active" id="tab-analyzer" onclick="switchTool('analyzer', this)">
+    <span class="dot"></span> Repo Analyzer
+  </div>
+  <div class="tool-tab" id="tab-tree" onclick="switchTool('tree', this)">
+    <span class="dot"></span> Repo Tree
+  </div>
+  <div class="tool-tab" id="tab-release" onclick="switchTool('release', this)">
+    <span class="dot"></span> Release Notes
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- ── Sidebar ── -->
+  <aside>
+
+    <!-- Common fields -->
+    <div>
+      <div class="section-lbl">Repository</div>
+      <div class="field">
+        <label>GitHub URL</label>
+        <input id="repoUrl" type="text" placeholder="https://github.com/owner/repo" />
+      </div>
+    </div>
+    <div class="field">
+      <label>GitHub PAT <span class="badge">required</span></label>
+      <input id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+      <span class="hint">Needs &apos;repo&apos; scope for private repos</span>
+    </div>
+    <div class="field" id="apiKeyField">
+      <label>Anthropic API Key <span class="badge">AI tools</span></label>
+      <input id="anthropicKey" type="password" placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxx" />
+      <span class="hint">Required for Repo Analyzer and Release Notes</span>
+    </div>
+
+    <hr />
+
+    <!-- ── Analyzer options ── -->
+    <div class="tool-section active" id="sec-analyzer">
+      <div class="section-lbl">Repo Analyzer Options</div>
+
+      <div class="field">
+        <label>Scope</label>
+        <div class="toggle-row">
+          <div class="toggle-btn active" id="scopeWhole" onclick="setScope('whole')">Whole Repo</div>
+          <div class="toggle-btn"        id="scopeFolder" onclick="setScope('folder')">Sub-folder</div>
+        </div>
+      </div>
+
+      <div class="folder-input" id="folderInputWrap">
+        <label style="font-size:13px;font-weight:500;">Folder URL or Path</label>
+        <input id="folderPath" type="text"
+               placeholder="https://github.com/owner/repo/tree/main/src  or  src/components" />
+        <span class="hint">Paste a GitHub folder URL or type the path directly</span>
+      </div>
+
+      <div class="field">
+        <label>Output File</label>
+        <input id="analyzerOutput" type="text" value="analysis.txt" />
+      </div>
+    </div>
+
+    <!-- ── Tree options ── -->
+    <div class="tool-section" id="sec-tree">
+      <div class="section-lbl">Repo Tree Options</div>
+      <div class="field">
+        <label>Output File</label>
+        <input id="treeOutput" type="text" value="tree.txt" />
+      </div>
+    </div>
+
+    <!-- ── Release Notes options ── -->
+    <div class="tool-section" id="sec-release">
+      <div class="section-lbl">Release Notes Options</div>
+      <div class="field">
+        <label>Commit SHA <span class="badge">optional</span></label>
+        <input id="commitSha" type="text" placeholder="e.g. abc1234  (blank = latest)" />
+        <span class="hint">Leave blank to use the latest commit</span>
+      </div>
+      <div class="field">
+        <label>Output File</label>
+        <input id="releaseOutput" type="text" value="release_note.txt" />
+      </div>
+    </div>
+
+    <hr />
+
+    <button class="btn-run" id="runBtn" onclick="runTool()">&#9654; Run</button>
+    <button class="btn-stop" id="stopBtn" onclick="stopJob()" disabled>&#9632; Stop</button>
+
+    <hr />
+
+    <!-- Stats (only shown for analyzer) -->
+    <div id="statsBlock">
+      <div class="section-lbl">Progress</div>
+      <div class="stats">
+        <div class="stat"><div class="n" id="statTotal">--</div><div class="l">Files</div></div>
+        <div class="stat"><div class="n" id="statDone">--</div><div class="l">Done</div></div>
+        <div class="stat"><div class="n" id="statPct">--</div><div class="l">Progress</div></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Main ── -->
+  <main>
+    <div class="tabs">
+      <div class="tab active" onclick="showPanel('log', this)">Live Log</div>
+      <div class="tab" onclick="showPanel('output', this)">Output</div>
+    </div>
+
+    <!-- Log panel -->
+    <div id="panel-log" class="panel active">
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <div class="log-wrap" id="logWrap">
+        <div class="empty-state" id="emptyState">
+          <div class="icon">&#128202;</div>
+          <p>Select a tool, fill in the form, and click <strong>Run</strong>.</p>
+        </div>
+        <div id="logEntries"></div>
+      </div>
+    </div>
+
+    <!-- Output panel -->
+    <div id="panel-output" class="panel">
+      <div class="out-toolbar">
+        <button class="tbtn" onclick="copyOutput()">Copy</button>
+        <button class="tbtn" id="dlBtn" onclick="dlOutput()" disabled>Download</button>
+        <span class="tinfo" id="outInfo">No output yet</span>
+      </div>
+      <div id="outWrap">
+        <pre id="outContent" style="color:var(--muted)">Run a tool to see the output here.</pre>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let currentTool  = 'analyzer';
+  let currentJobId = null;
+  let currentScope = 'whole';
+  let totalFiles = 0, doneFiles = 0;
+
+  function switchTool(tool, el) {
+    currentTool = tool;
+    document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.tool-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('sec-' + tool).classList.add('active');
+    document.getElementById('statsBlock').style.display = tool === 'analyzer' ? 'block' : 'none';
+    // Show API key field only for tools that need Claude
+    document.getElementById('apiKeyField').style.display = tool === 'tree' ? 'none' : 'flex';
+    resetLog();
+  }
+
+  function setScope(scope) {
+    currentScope = scope;
+    document.getElementById('scopeWhole').classList.toggle('active',  scope === 'whole');
+    document.getElementById('scopeFolder').classList.toggle('active', scope === 'folder');
+    document.getElementById('folderInputWrap').classList.toggle('visible', scope === 'folder');
+  }
+
+  /* Parse a GitHub folder URL → plain path, or return as-is if already a path */
+  function parseFolderPath(raw) {
+    raw = raw.trim().replace(/\/$/, '');
+    const m = raw.match(/https?:\/\/github\.com\/[^/]+\/[^/]+\/tree\/[^/]+\/(.+)/);
+    return m ? m[1].replace(/^\//, '') : raw.replace(/^\//, '');
+  }
+
+  function showPanel(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  function ts() { return new Date().toTimeString().slice(0, 8); }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function appendLog(msg, type) {
+    document.getElementById('emptyState').style.display = 'none';
+    const wrap = document.getElementById('logEntries');
+    const d = document.createElement('div');
+    d.className = 'log-entry ' + (type || 'info');
+    d.innerHTML = '<span class="ts">' + ts() + '</span><span class="msg">' + esc(msg) + '</span>';
+    wrap.appendChild(d);
+    document.getElementById('logWrap').scrollTop = 99999;
+  }
+
+  function updateStats(total, done) {
+    if (total != null) totalFiles = total;
+    if (done  != null) doneFiles  = done;
+    document.getElementById('statTotal').textContent = totalFiles || '--';
+    document.getElementById('statDone').textContent  = doneFiles  || '--';
+    const pct = totalFiles ? Math.round(doneFiles / totalFiles * 100) : 0;
+    document.getElementById('statPct').textContent   = totalFiles ? pct + '%' : '--';
+    document.getElementById('progressFill').style.width = (totalFiles ? pct : 0) + '%';
+  }
+
+  function setRunning(running) {
+    document.getElementById('runBtn').disabled = running;
+    document.getElementById('runBtn').innerHTML = running
+      ? '<div class="spinner"></div> Running...' : '&#9654; Run';
+    document.getElementById('stopBtn').disabled = !running;
+    document.getElementById('stopBtn').style.opacity = running ? '1' : '0.35';
+  }
+
+  function resetLog() {
+    document.getElementById('logEntries').innerHTML = '';
+    document.getElementById('emptyState').style.display = 'flex';
+    document.getElementById('progressFill').style.width = '0';
+    updateStats(0, 0);
+  }
+
+  async function runTool() {
+    const url     = document.getElementById('repoUrl').value.trim();
+    const token   = document.getElementById('ghToken').value.trim();
+    const api_key = document.getElementById('anthropicKey').value.trim();
+    if (!url)   { alert('Please enter a GitHub repository URL.'); return; }
+    if (!token) { alert('Please enter your GitHub Personal Access Token.'); return; }
+    if (currentTool !== 'tree' && !api_key) {
+      alert('Please enter your Anthropic API Key — it is required for AI features.'); return;
+    }
+
+    let endpoint, body;
+    if (currentTool === 'analyzer') {
+      const folderRaw = currentScope === 'folder'
+        ? document.getElementById('folderPath').value.trim() : '';
+      if (currentScope === 'folder' && !folderRaw) {
+        alert('Please enter a folder URL or path to analyse.'); return;
+      }
+      const folder = folderRaw ? parseFolderPath(folderRaw) : '';
+      endpoint = '/analyze';
+      body = { url, token, api_key, folder,
+               output: document.getElementById('analyzerOutput').value.trim() || 'analysis.txt' };
+    } else if (currentTool === 'tree') {
+      endpoint = '/tree';
+      body = { url, token, output: document.getElementById('treeOutput').value.trim() || 'tree.txt' };
+    } else {
+      endpoint = '/release';
+      body = { url, token, api_key,
+               commit: document.getElementById('commitSha').value.trim(),
+               output: document.getElementById('releaseOutput').value.trim() || 'release_note.txt' };
+    }
+
+    resetLog();
+    document.getElementById('outContent').textContent = 'Waiting for output...';
+    document.getElementById('outContent').style.color = 'var(--muted)';
+    document.getElementById('dlBtn').disabled = true;
+    document.getElementById('outInfo').textContent = 'No output yet';
+    setRunning(true);
+    currentJobId = null;
+
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await resp.json();
+      if (data.error) { appendLog('Error: ' + data.error, 'error'); setRunning(false); return; }
+
+      currentJobId = data.job_id;
+      appendLog('Job started — ' + endpoint, 'info');
+
+      const es = new EventSource('/stream/' + currentJobId);
+      es.onmessage = (e) => {
+        const ev = JSON.parse(e.data);
+        if (ev.type === 'ping') return;
+        if (ev.message) appendLog(ev.message, ev.type);
+
+        const m = ev.message && ev.message.match(/\[(\d+)\/(\d+)\]/);
+        if (m) updateStats(parseInt(m[2]), parseInt(m[1]));
+
+        if (ev.type === 'complete') {
+          es.close(); setRunning(false);
+          document.getElementById('dlBtn').disabled = false;
+          fetchOutput();
+          showPanel('output', document.querySelectorAll('.tab')[1]);
+          appendLog('✅ File ready — downloading automatically…', 'success');
+          dlOutput();   // auto-download to the user's PC
+        }
+        if (ev.type === 'stopped') {
+          es.close(); setRunning(false);
+          appendLog('Stopped. You can start a new run.', 'warn');
+        }
+        if (ev.type === 'error') { es.close(); setRunning(false); }
+      };
+      es.onerror = () => { es.close(); setRunning(false); appendLog('Stream disconnected.', 'error'); };
+
+    } catch (err) {
+      appendLog('Request failed: ' + err.message, 'error');
+      setRunning(false);
+    }
+  }
+
+  async function stopJob() {
+    if (!currentJobId) return;
+    await fetch('/stop/' + currentJobId, { method: 'POST' });
+    appendLog('Stop requested...', 'warn');
+    document.getElementById('stopBtn').disabled = true;
+    document.getElementById('stopBtn').style.opacity = '0.35';
+  }
+
+  async function fetchOutput() {
+    if (!currentJobId) return;
+    try {
+      const r = await fetch('/output/' + currentJobId);
+      if (r.ok) {
+        const text = await r.text();
+        const el = document.getElementById('outContent');
+        el.textContent = text;
+        el.style.color = 'var(--text)';
+        document.getElementById('outInfo').textContent =
+          (text.length / 1024).toFixed(1) + ' KB  |  ' + text.split('\n').length + ' lines';
+      }
+    } catch(e) {}
+  }
+
+  function copyOutput() {
+    navigator.clipboard.writeText(document.getElementById('outContent').textContent)
+      .then(() => alert('Copied to clipboard!'));
+  }
+
+  function dlOutput() {
+    if (!currentJobId) return;
+    // Hidden anchor click — works reliably without popup blockers
+    const a = document.createElement('a');
+    a.href = '/download/' + currentJobId;
+    a.download = '';          // filename comes from Content-Disposition header on the server
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // Initialise on load — analyzer is the default active tool
+  document.getElementById('statsBlock').style.display  = 'block';
+  document.getElementById('apiKeyField').style.display = 'flex';  // visible for analyzer
+</script>
+</body>
+</html>

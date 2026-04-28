@@ -1,0 +1,50 @@
+{
+  "agent": "architecture",
+  "project_name": "Clickstream Analytics Platform",
+  "request_type": "new development",
+  "selected_architecture": "Dataflow Direct KafkaIO Streaming",
+  "pattern_type": "streaming",
+  "cloud_platform": "GCP",
+  "tech_stack": {
+    "ingestion": "Confluent Kafka + Apache Beam KafkaIO",
+    "processing": "Google Cloud Dataflow (Apache Beam 2.x Streaming Engine)",
+    "storage": "Google BigQuery (Storage Write API \u2014 exactly-once)",
+    "orchestration": "Cloud Composer 2 (Apache Airflow 2.x)",
+    "monitoring": "Cloud Monitoring + Cloud Logging + Dataflow Native Metrics",
+    "iac": "Terraform"
+  },
+  "flow_steps": [
+    "1. Ingestion: KafkaIO connector (Apache Beam) authenticates to Confluent Kafka via SASL/PLAIN API key (credentials injected at runtime from GCP Secret Manager) and continuously polls 3 topics \u2014 clickstream.page_views, clickstream.user_events, clickstream.sessions \u2014 at up to 5,000 events/second peak throughput; consumer group offsets are checkpointed to Dataflow's durable state store to guarantee at-least-once read semantics",
+    "2. Processing: Dataflow Streaming job (Apache Beam) parses JSON payloads via a DoFn with null-safe field mapping, routes unparseable or schema-invalid records to the Confluent dead-letter topic (clickstream.dead_letter) without interrupting the pipeline, deduplicates valid records on event_id using a 10-minute sliding window with 1-minute slide interval via Beam stateful processing, and emits structured audit entries to pipeline_audit.pipeline_run_log in BigQuery after each window fires",
+    "3. Storage: BigQuery Storage Write API (exactly-once mode) appends validated, deduplicated records to date-partitioned tables (page_views, user_events, sessions) in dataset verizon_clickstream_deah within project verizon-data; tables partitioned by event_timestamp (DATE) and clustered on session_id; commit intervals tuned to 20 seconds to guarantee sub-60-second end-to-end delivery",
+    "4. Consumption: Looker connects directly to BigQuery via Standard SQL for real-time user behaviour dashboards and funnel analysis across page views, clicks, and session activity; an hourly reconciliation job validates BigQuery row counts against Kafka consumer group offsets to enforce the zero-data-loss SLA; Cloud Monitoring dashboards surface Dataflow worker health, per-topic consumer lag, and end-to-end latency percentiles"
+  ],
+  "key_constraints": [
+    "technology.preferred_tools: Google Cloud Dataflow, Apache Beam; functional_requirements[0]: Consume events in real-time from Confluent Kafka using Dataflow Streaming",
+    "functional_requirements[2]: Deduplicate events on event_id within a 10-minute sliding window",
+    "functional_requirements[3]: Partition BigQuery target tables by event_timestamp (DATE)",
+    "functional_requirements[4]: Route unparseable or schema-invalid events to a dead-letter Kafka topic; assumptions[3]: Dead-letter destination is a separate Kafka topic",
+    "non_functional.sla: Zero data loss; event count in Kafka must match BigQuery row count per hour"
+  ],
+  "high_priority_risks": [
+    {
+      "risk": "Data Loss",
+      "mitigation": "Configure KafkaIO checkpointing aligned to Dataflow durable shuffle checkpoints so offsets are only committed after successful BigQuery Storage Write API exactly-once commit; set Kafka consumer group auto.offset.reset=earliest to replay from last committed offset on restart; implement hourly reconciliation Cloud Composer DAG that compares Kafka consumer group lag-adjusted offset counts against BigQuery row counts with alerting on discrepancy exceeding 0.01%; maintain minimum 24-hour Kafka topic retention to support replay windows"
+    },
+    {
+      "risk": "Schema Evolution",
+      "mitigation": "Adopt Confluent Schema Registry with backward-compatible JSON Schema or AVRO evolution policy enforced at producer registration; implement null-safe field mapping in the Beam parsing DoFn with explicit fallback values for missing optional fields; route any record failing schema validation to the dead-letter topic with a structured error envelope (raw_payload, error_type, topic, partition, offset, timestamp); include schema_version in the pipeline_audit.pipeline_run_log for change traceability"
+    },
+    {
+      "risk": "Latency SLA Breach",
+      "mitigation": "Enable Dataflow Streaming Engine; set Storage Write API commit interval to 20 seconds providing 40 seconds of remaining budget; configure Cloud Monitoring latency alert at 45 seconds (15-second early warning before SLA breach); set minWorkers=4 during defined business hours peak windows via Cloud Composer scheduled Dataflow job update; load test at 2x peak (10,000 events/second) pre-production to validate auto-scaling response time and establish latency baselines"
+    }
+  ],
+  "scoring_one_liner": "Scored 7.90/10 \u2014 Cost 7, Scalability 9, Complexity 7, Latency 9, Operability 8. Trade-offs accepted: Accepted: moderate initial CI/CD complexity from Dataflow Flex Template containerisation; increased state store size from 10-minute sliding window deduplication at peak throughput; Confluent Cloud egress charges for cross-platform data transfer. These are manageable one-time and steady-state costs that are significantly outweighed by the latency, reliability, and alignment-to-requirements benefits of this option.",
+  "open_blockers": [
+    "Is Confluent Schema Registry in use for the 3 Kafka topics? If AVRO or Protobuf schemas are registered, the Beam pipeline should use the Confluent Schema Registry Beam transform for deserialization rather than generic JSON parsing, providing compile-time schema enforcement and significantly improved parse performance.",
+    "What is the agreed schema evolution policy with upstream Kafka producers? Specifically, are field additions guaranteed to be backward-compatible, and is there a formal schema change notification process to alert the pipeline team before breaking changes are deployed to producers?",
+    "What retention period is configured on the dead-letter Kafka topic (clickstream.dead_letter)? The retention window determines the replay and forensic analysis window for malformed events, and should be a minimum of 7 days to support incident investigation and reprocessing after schema fixes."
+  ],
+  "ticket_id": "SCRUM-117"
+}

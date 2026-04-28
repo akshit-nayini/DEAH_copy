@@ -1,0 +1,45 @@
+erDiagram
+    stg_orders {
+        STRING order_id PK
+        STRING user_id
+        STRING order_status
+        NUMERIC total_amount
+        STRING currency
+        STRING shipping_address
+        STRING payment_method
+        DATE order_date
+        TIMESTAMP shipped_at
+        TIMESTAMP delivered_at
+        TIMESTAMP cancelled_at
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    stg_order_items {
+        INT64 item_id PK
+        STRING order_id FK
+        STRING product_id
+        STRING product_name
+        INT64 quantity
+        NUMERIC unit_price
+        NUMERIC discount_amount
+        NUMERIC line_total
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    stg_order_events {
+        STRING order_id FK
+        STRING user_id
+        STRING order_status
+        NUMERIC total_amount
+        STRING currency
+        STRING shipping_address
+        STRING payment_method
+        DATE order_date
+        TIMESTAMP shipped_at
+        TIMESTAMP delivered_at
+        TIMESTAMP cancelled_at
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    stg_orders ||--o{ stg_order_items : "order_id"
+    stg_orders ||--o{ stg_order_events : "order_id"

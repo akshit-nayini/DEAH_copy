@@ -1,0 +1,41 @@
+%% Architecture Flow: Customer 360 | GCP | batch
+flowchart LR
+
+    subgraph rec["⭐ Option 2: Direct MySQL to BigQuery Transfer — Recommended"]
+        direction LR
+        I1["📥 Ingestion<br/>BigQuery Data Transfer Service"]
+        P1["⚙️ Processing<br/>BigQuery SQL"]
+        S1["💾 Storage<br/>BigQuery"]
+        C1["📊 Consumption<br/>Consumption"]
+        Orch1["📅 Orchestration<br/>Cloud Composer"]
+        Mon1["📋 Monitoring<br/>Cloud Monitoring"]
+        IaC1["🔨 IaC<br/>Terraform"]
+        I1 --> P1 --> S1 --> C1
+        Orch1 -.->|schedules| I1
+        Orch1 -.->|orchestrates| P1
+        Mon1 -.->|observes| P1
+        IaC1 -.->|provisions| Orch1
+    end
+
+    subgraph o1["Option 1: Cloud SQL Connector with Dataflow"]
+        direction LR
+        I1["📥 Ingestion<br/>Cloud SQL Connector"]
+        P1["⚙️ Processing<br/>Dataflow"]
+        S1["💾 Storage<br/>BigQuery"]
+        C1["📊 Consumption<br/>Consumption"]
+        I1 --> P1 --> S1 --> C1
+    end
+
+    subgraph o3["Option 3: Dataproc Spark with JDBC"]
+        direction LR
+        I3["📥 Ingestion<br/>Dataproc Spark"]
+        P3["⚙️ Processing<br/>Dataproc Spark"]
+        S3["💾 Storage<br/>Cloud Storage + BigQuery"]
+        C3["📊 Consumption<br/>Consumption"]
+        I3 --> P3 --> S3 --> C3
+    end
+
+    classDef recommended fill:#d4edda,stroke:#28a745,stroke-width:2px
+    classDef rejected fill:#f8f9fa,stroke:#6c757d,stroke-width:1px,stroke-dasharray:4
+    class I1,P1,S1,C1,Orch1,Mon1,IaC1 recommended
+    class I1,P1,S1,C1,I3,P3,S3,C3 rejected

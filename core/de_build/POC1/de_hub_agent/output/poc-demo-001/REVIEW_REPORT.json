@@ -1,0 +1,73 @@
+[
+  {
+    "review_id": "12c7acd5-1e84-48af-bfe3-502d4fd9c094",
+    "reviewed_at": "2026-04-03T20:14:31.442047",
+    "dimension": "correctness",
+    "verdict": "PASS",
+    "summary": "Correctness review: 0 critical, 0 warning, 0 info findings",
+    "findings": [],
+    "stats": {
+      "tables_checked": 6,
+      "ddl_files_found": 6,
+      "dml_files_found": 6,
+      "critical_count": 0,
+      "warning_count": 0
+    }
+  },
+  {
+    "review_id": "e63bdbd2-ee97-4552-99d1-ff2ee41f7594",
+    "reviewed_at": "2026-04-03T20:14:31.444453",
+    "dimension": "security",
+    "verdict": "CONDITIONAL_PASS",
+    "summary": "Security review: 0 critical, 5 warning findings",
+    "findings": [
+      {
+        "check_name": "PII_UNMASKED",
+        "severity": "WARNING",
+        "file_name": "merge_dim_customer.sql",
+        "line_reference": null,
+        "description": "PII column 'first_name' appears unmasked in DML for non-staging table 'dim_customer'",
+        "suggested_fix": "Apply masking: SHA256(CAST(first_name AS BYTES)) or use BigQuery column-level policy tags"
+      },
+      {
+        "check_name": "PII_UNMASKED",
+        "severity": "WARNING",
+        "file_name": "merge_dim_customer.sql",
+        "line_reference": null,
+        "description": "PII column 'last_name' appears unmasked in DML for non-staging table 'dim_customer'",
+        "suggested_fix": "Apply masking: SHA256(CAST(last_name AS BYTES)) or use BigQuery column-level policy tags"
+      },
+      {
+        "check_name": "PII_UNMASKED",
+        "severity": "WARNING",
+        "file_name": "merge_dim_customer.sql",
+        "line_reference": null,
+        "description": "PII column 'email' appears unmasked in DML for non-staging table 'dim_customer'",
+        "suggested_fix": "Apply masking: SHA256(CAST(email AS BYTES)) or use BigQuery column-level policy tags"
+      },
+      {
+        "check_name": "PII_UNMASKED",
+        "severity": "WARNING",
+        "file_name": "merge_dim_customer.sql",
+        "line_reference": null,
+        "description": "PII column 'phone' appears unmasked in DML for non-staging table 'dim_customer'",
+        "suggested_fix": "Apply masking: SHA256(CAST(phone AS BYTES)) or use BigQuery column-level policy tags"
+      },
+      {
+        "check_name": "PII_UNMASKED",
+        "severity": "WARNING",
+        "file_name": "merge_dim_customer.sql",
+        "line_reference": null,
+        "description": "PII column 'address_line1' appears unmasked in DML for non-staging table 'dim_customer'",
+        "suggested_fix": "Apply masking: SHA256(CAST(address_line1 AS BYTES)) or use BigQuery column-level policy tags"
+      }
+    ],
+    "stats": {
+      "files_scanned": 12,
+      "secret_patterns_checked": 7,
+      "pii_columns_checked": 5,
+      "critical_count": 0,
+      "warning_count": 5
+    }
+  }
+]

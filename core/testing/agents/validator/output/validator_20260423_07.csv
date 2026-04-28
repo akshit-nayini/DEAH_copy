@@ -1,0 +1,101 @@
+tc_id,category,test_name,description,query,expected_result,priority,linked_ac,resolved_query,actual_result,verdict
+TC-001,SCHEMA,Verify target table exists,Check stg_employees table exists in BigQuery dataset,SELECT COUNT(*) as table_count FROM `INFORMATION_SCHEMA.TABLES` WHERE table_name = 'stg_employees',table_count = 1,High,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-002,SCHEMA,Verify column count in target table,Validate stg_employees has exactly 14 columns,SELECT COUNT(*) as col_count FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees',col_count = 14,High,,COUNT(columns) INFORMATION_SCHEMA: stg_employees_synthetic vs stg_employees,"column_count: stg_employees_synthetic=14, stg_employees=14 — match",PASS
+TC-003,SCHEMA,Verify employee_id data type,Confirm employee_id column is INT64 type,SELECT data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name = 'employee_id',data_type = 'INT64',High,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-004,SCHEMA,Verify salary column data type,Confirm salary column is NUMERIC type,SELECT data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name = 'salary',data_type = 'NUMERIC',High,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-005,SCHEMA,Verify commission_pct data type,Confirm commission_pct column is NUMERIC type,SELECT data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name = 'commission_pct',data_type = 'NUMERIC',Medium,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-006,SCHEMA,Verify hire_date data type,Confirm hire_date column is DATE type,SELECT data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name = 'hire_date',data_type = 'DATE',High,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-007,SCHEMA,Verify created_date data type,Confirm created_date column is TIMESTAMP type,SELECT data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name = 'created_date',data_type = 'TIMESTAMP',High,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-008,SCHEMA,Verify updated_date data type,Confirm updated_date column is TIMESTAMP type,SELECT data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name = 'updated_date',data_type = 'TIMESTAMP',Medium,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-009,SCHEMA,Verify string columns data types,"Confirm first_name, last_name, email, phone_number, job_id, status are STRING","SELECT column_name, data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name IN ('first_name','last_name','email','phone_number','job_id','status') ORDER BY column_name",All 6 columns have data_type = 'STRING',High,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-010,SCHEMA,Verify manager_id and department_id types,Confirm manager_id and department_id are INT64 type,"SELECT column_name, data_type FROM `INFORMATION_SCHEMA.COLUMNS` WHERE table_name = 'stg_employees' AND column_name IN ('manager_id','department_id')",Both columns have data_type = 'INT64',Medium,,INFORMATION_SCHEMA.COLUMNS: stg_employees_synthetic vs stg_employees,All 14 columns match — names and data types identical,PASS
+TC-011,PARTITION,Verify partition column on created_date,Confirm stg_employees is partitioned by created_date,SELECT partition_column FROM `INFORMATION_SCHEMA.TABLES` WHERE table_name = 'stg_employees',partition_column = 'created_date',High,,INFORMATION_SCHEMA — partition + cluster: stg_employees_synthetic vs stg_employees,"Both partitioned by updated_date | Both clustered by ['job_id', 'department_id', 'status'] — match",PASS
+TC-012,PARTITION,Verify partition type is TIMESTAMP,Confirm partitioning uses TIMESTAMP type on created_date,"SELECT partitioning_type, partition_column FROM `INFORMATION_SCHEMA.TABLES` WHERE table_name = 'stg_employees'",partitioning_type = 'HOUR' or 'DAY' on created_date,High,,INFORMATION_SCHEMA — partition + cluster: stg_employees_synthetic vs stg_employees,"Both partitioned by updated_date | Both clustered by ['job_id', 'department_id', 'status'] — match",PASS
+TC-013,PARTITION,Verify no null partition keys,No records should have null created_date partition column,SELECT COUNT(*) as null_partition_count FROM `stg_employees` WHERE created_date IS NULL,null_partition_count = 0,High,,INFORMATION_SCHEMA — partition + cluster: stg_employees_synthetic vs stg_employees,"Both partitioned by updated_date | Both clustered by ['job_id', 'department_id', 'status'] — match",PASS
+TC-014,PARTITION,Verify clustering columns configuration,Confirm table is clustered by employee_id and department_id,SELECT clustering_columns FROM `INFORMATION_SCHEMA.TABLES` WHERE table_name = 'stg_employees',clustering_columns includes 'employee_id' and 'department_id',High,,INFORMATION_SCHEMA — partition + cluster: stg_employees_synthetic vs stg_employees,"Both partitioned by updated_date | Both clustered by ['job_id', 'department_id', 'status'] — match",PASS
+TC-015,PARTITION,Verify partition pruning works correctly,Query with created_date filter uses partition pruning,"SELECT COUNT(*) FROM `stg_employees` WHERE created_date BETWEEN TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) AND CURRENT_TIMESTAMP()","Query executes without full table scan, bytes processed reduced",Medium,AC-3,INFORMATION_SCHEMA — partition + cluster: stg_employees_synthetic vs stg_employees,"Both partitioned by updated_date | Both clustered by ['job_id', 'department_id', 'status'] — match",PASS
+TC-016,PARTITION,Verify partitions created per load,New partitions exist after each pipeline run,"SELECT partition_id, row_count FROM `stg_employees$__PARTITIONS_SUMMARY__` ORDER BY partition_id DESC LIMIT 5",Recent partitions exist with row_count > 0,Medium,,INFORMATION_SCHEMA — partition + cluster: stg_employees_synthetic vs stg_employees,"Both partitioned by updated_date | Both clustered by ['job_id', 'department_id', 'status'] — match",PASS
+TC-017,DATA QUALITY,Verify employee_id not null,Primary key employee_id must not be null,SELECT COUNT(*) as null_count FROM `stg_employees` WHERE employee_id IS NULL,null_count = 0,High,,SELECT COUNT(*) as null_count FROM `stg_employees` WHERE employee_id IS NULL,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 325d143e-05e1-4167-9492-b697dc36c55e
+",FAIL
+TC-018,DATA QUALITY,Verify employee_id uniqueness,employee_id must be unique across all records,SELECT COUNT(*) as dup_count FROM (SELECT employee_id FROM `stg_employees` GROUP BY employee_id HAVING COUNT(*) > 1),dup_count = 0,High,,SELECT COUNT(*) as dup_count FROM (SELECT employee_id FROM `stg_employees` GROUP BY employee_id HAVING COUNT(*) > 1),"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: dc911d05-90ba-49dc-9afb-2d0f04ec0077
+",FAIL
+TC-019,DATA QUALITY,Verify email not null,Email column must not contain null values,SELECT COUNT(*) as null_email FROM `stg_employees` WHERE email IS NULL,null_email = 0,High,,SELECT COUNT(*) as null_email FROM `stg_employees` WHERE email IS NULL,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 18bcae6d-9877-475f-b37d-d9ca55e182ad
+",FAIL
+TC-020,DATA QUALITY,Verify salary is non-negative,All salary values must be greater than or equal to zero,SELECT COUNT(*) as neg_salary_count FROM `stg_employees` WHERE salary < 0,neg_salary_count = 0,High,,SELECT COUNT(*) as neg_salary_count FROM `stg_employees` WHERE salary < 0,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: da7e3d07-f56f-4488-ab7f-f24531b29dd4
+",FAIL
+TC-021,DATA QUALITY,Verify commission_pct range,commission_pct must be between 0 and 1 or null,SELECT COUNT(*) as invalid_comm FROM `stg_employees` WHERE commission_pct IS NOT NULL AND (commission_pct < 0 OR commission_pct > 1),invalid_comm = 0,Medium,,SELECT COUNT(*) as invalid_comm FROM `stg_employees` WHERE commission_pct IS NOT NULL AND (commission_pct < 0 OR commission_pct > 1),"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: d866673a-55cc-4fd8-b75f-36cebca8e074
+",FAIL
+TC-022,DATA QUALITY,Verify hire_date is valid date,hire_date must not be null or future date,SELECT COUNT(*) as invalid_hire FROM `stg_employees` WHERE hire_date IS NULL OR hire_date > CURRENT_DATE(),invalid_hire = 0,High,,SELECT COUNT(*) as invalid_hire FROM `stg_employees` WHERE hire_date IS NULL OR hire_date > CURRENT_DATE(),"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 018a61f6-4427-41b5-b24f-271f88923981
+",FAIL
+TC-023,DATA QUALITY,Verify row count matches source,Target row count must match source EMPLOYEES table,SELECT COUNT(*) as target_row_count FROM `stg_employees`,target_row_count equals source MySQL EMPLOYEES row count,High,,SELECT COUNT(*) as target_row_count FROM `stg_employees`,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 60c6e9ad-4055-453f-a7e8-bc3b29fdd682
+",FAIL
+TC-024,DATA QUALITY,Verify no duplicate rows,No fully duplicate records exist in stg_employees,"SELECT COUNT(*) as dup_rows FROM (SELECT employee_id, first_name, last_name, email, created_date, COUNT(*) as cnt FROM `stg_employees` GROUP BY 1,2,3,4,5 HAVING cnt > 1)",dup_rows = 0,High,,"SELECT COUNT(*) as dup_rows FROM (SELECT employee_id, first_name, last_name, email, created_date, COUNT(*) as cnt FROM `stg_employees` GROUP BY 1,2,3,4,5 HAVING cnt > 1)","ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 3f27ab1b-4390-4837-bba4-3288617e0c88
+",FAIL
+TC-025,DATA QUALITY,Verify job_id not null,job_id must not contain null values,SELECT COUNT(*) as null_job FROM `stg_employees` WHERE job_id IS NULL,null_job = 0,Medium,,SELECT COUNT(*) as null_job FROM `stg_employees` WHERE job_id IS NULL,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: f33a0dbb-76d5-49b0-b93b-0388d88c1c89
+",FAIL
+TC-026,DATA QUALITY,Verify department_id not null,department_id must not contain null values,SELECT COUNT(*) as null_dept FROM `stg_employees` WHERE department_id IS NULL,null_dept = 0,Medium,,SELECT COUNT(*) as null_dept FROM `stg_employees` WHERE department_id IS NULL,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: e7f246ac-5598-4e3c-8c9e-13c5e5569f37
+",FAIL
+TC-027,DATA QUALITY,Verify status column valid values,Status column must not be null or empty string,SELECT COUNT(*) as invalid_status FROM `stg_employees` WHERE status IS NULL OR TRIM(status) = '',invalid_status = 0,Medium,,SELECT COUNT(*) as invalid_status FROM `stg_employees` WHERE status IS NULL OR TRIM(status) = '',"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 43299619-3aff-46dc-8469-70f9511e9036
+",FAIL
+TC-028,DATA QUALITY,Verify created_date not null,created_date must not be null in any record,SELECT COUNT(*) as null_created FROM `stg_employees` WHERE created_date IS NULL,null_created = 0,High,,SELECT COUNT(*) as null_created FROM `stg_employees` WHERE created_date IS NULL,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 949cfef0-055d-43e0-8ba0-2ca5e87636e6
+",FAIL
+TC-029,DATA QUALITY,Verify updated_date after created_date,updated_date must be greater than or equal to created_date,SELECT COUNT(*) as invalid_update FROM `stg_employees` WHERE updated_date IS NOT NULL AND updated_date < created_date,invalid_update = 0,Medium,,SELECT COUNT(*) as invalid_update FROM `stg_employees` WHERE updated_date IS NOT NULL AND updated_date < created_date,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: eb09ae35-5f5c-4818-8c9c-925bc35db34e
+",FAIL
+TC-030,DATA QUALITY,Verify email format validity,Email values must follow valid email format pattern,"SELECT COUNT(*) as invalid_email FROM `stg_employees` WHERE email IS NOT NULL AND NOT REGEXP_CONTAINS(email, r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')",invalid_email = 0,Medium,,"SELECT COUNT(*) as invalid_email FROM `stg_employees` WHERE email IS NOT NULL AND NOT REGEXP_CONTAINS(CAST(email AS STRING), r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')","ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 70c8b7ea-9438-4c1b-b225-992047bb5e75
+",FAIL
+TC-031,DATA QUALITY,Verify CAST transformations for employee_id,employee_id CAST from NUMBER to INT64 without data loss,SELECT COUNT(*) as cast_error FROM `stg_employees` WHERE CAST(CAST(employee_id AS STRING) AS INT64) != employee_id,cast_error = 0,High,,SELECT COUNT(*) as cast_error FROM `stg_employees` WHERE CAST(CAST(employee_id AS STRING) AS INT64) != employee_id,"ERROR: 400 Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).; reason: invalid, location: stg_employees, message: Table ""stg_employees"" must be qualified with a dataset (e.g. dataset.table).
+
+Location: US
+Job ID: 329052f6-d9b5-41c9-84a7-1a7b381bd511
+",FAIL
+TC-032,AIRFLOW JOB,Verify pipeline completes within 1 hour,End-to-end pipeline run duration must be under 60 minutes,,DAG run duration < 60 minutes from trigger to completion,High,AC-1,nan,N/A (no query),SKIP
+TC-033,AIRFLOW JOB,Verify hourly schedule execution,DAG schedule interval must be set to hourly,,DAG schedule_interval = '@hourly' or '0 * * * *',High,AC-2,nan,N/A (no query),SKIP
+TC-034,AIRFLOW JOB,Verify pipeline handles 10 GB volume,Pipeline completes successfully with 10 GB data load,,DAG run status = 'success' with 10 GB input data,High,AC-3,nan,N/A (no query),SKIP
+TC-035,AIRFLOW JOB,Verify DAG runs in Dev environment,DAG executes successfully in Dev environment without errors,,DAG run state = 'success' in Dev environment,High,AC-4,nan,N/A (no query),SKIP
+TC-036,AIRFLOW JOB,Verify no failed tasks in DAG run,All tasks in pipeline DAG must complete without failure,,"All task_instance states = 'success', no 'failed' states",High,AC-1,nan,N/A (no query),SKIP
+TC-037,AIRFLOW JOB,Verify DAG retry configuration,DAG tasks must have retry logic configured on failure,,Each task has retries >= 1 and retry_delay defined,Medium,AC-2,nan,N/A (no query),SKIP
+TC-038,AIRFLOW JOB,Verify no DAG import errors,Airflow DAG file must load without import errors,,DAG import_errors count = 0 in Airflow metadata DB,High,AC-4,nan,N/A (no query),SKIP
+TC-039,AIRFLOW JOB,Verify pipeline task dependency order,Tasks execute in correct dependency sequence end-to-end,,Extract -> Transform -> Load task order maintained in DAG,Medium,AC-1,nan,N/A (no query),SKIP
+TC-040,AIRFLOW JOB,Verify pipeline SLA alert on breach,SLA miss alert triggered if run exceeds 60 minutes,,SLA miss notification sent when run duration > 60 minutes,Medium,AC-1,nan,N/A (no query),SKIP

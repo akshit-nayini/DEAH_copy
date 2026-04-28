@@ -1,0 +1,12 @@
+test_case,description,status
+TC001,Draft invoices cleared before regeneration,PASS
+TC002,Only active subscriptions billed,PASS
+TC003,Expired subscriptions excluded,PASS
+TC004,Tax rate applied from region,PASS
+TC005,Zero tax for regions without tax config,PASS
+TC006,Total equals base plus tax,PASS
+TC007,Loyalty discount applied at 12+ months,PASS
+TC008,Discount reduces total correctly,PASS
+TC009,Under 12 months gets no discount,PASS
+TC010,All drafts finalized at end,PASS
+TC011,Rerun clears only drafts not finalized,PASS

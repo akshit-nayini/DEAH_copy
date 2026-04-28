@@ -1,0 +1,44 @@
+{
+  "request_id": "SCRUM-75",
+  "target": "gcp",
+  "validation": [
+    {
+      "check": "bigquery",
+      "status": "fail",
+      "message": "No module named 'common'",
+      "details": {}
+    },
+    {
+      "check": "gcs_dag_bucket",
+      "status": "skipped",
+      "message": "dag_bucket not set \u2014 DAG upload step will be skipped",
+      "details": {}
+    },
+    {
+      "check": "composer_env",
+      "status": "skipped",
+      "message": "composer_environment not set \u2014 DAG deploy step will be skipped",
+      "details": {}
+    },
+    {
+      "check": "dataflow_api",
+      "status": "skipped",
+      "message": "Dataflow API not detected \u2014 Flex Template step will be skipped",
+      "details": {}
+    },
+    {
+      "check": "secret_manager",
+      "status": "skipped",
+      "message": "Secret Manager not verified (optional): cannot import name 'secretmanager' from 'google.cloud' (unknown location)",
+      "details": {}
+    },
+    {
+      "check": "source_db",
+      "status": "skipped",
+      "message": "source_db_type / source_db_host not set \u2014 source DB check skipped",
+      "details": {}
+    }
+  ],
+  "steps": [],
+  "overall_status": "failed"
+}
